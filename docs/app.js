@@ -111,6 +111,19 @@ function sentenceCase(text) {
   return text.replace(/\s+/g, " ").trim();
 }
 
+function isPricingLine(line) {
+  return (
+    /\$\s*\d|€\s*\d|£\s*\d|\d+\s?(usd|eur|gbp)/i.test(line) ||
+    /pricing|price|monthly fee|implementation fee|setup fee|annual fee|per user|per month|per year|starting at|from\s+\$|quote/i.test(
+      line,
+    )
+  );
+}
+
+function isBoilerplateLine(line) {
+  return /available languages|payment gateways|all rights reserved|terms of service|privacy policy|cookies/i.test(line);
+}
+
 function pickFirstMeaningfulDescription(lines, title) {
   const titleLower = (title || "").toLowerCase();
   return (
@@ -119,33 +132,46 @@ function pickFirstMeaningfulDescription(lines, title) {
       return (
         lower !== titleLower &&
         line.length >= 28 &&
-        !/\$|pricing|monthly fee|implementation fee|available languages|payment gateways/i.test(line)
+        !isPricingLine(line) &&
+        !isBoilerplateLine(line)
       );
     }) || ""
   );
 }
 
+function extractAudienceLines(lines) {
+  return lines
+    .filter((line) => /for\s+[a-z0-9][^.!?]{3,}|designed for|ideal for|built for|help(s)?\s+[a-z]/i.test(line))
+    .filter((line) => !isPricingLine(line) && !isBoilerplateLine(line))
+    .slice(0, 2);
+}
+
 function extractFeatureLines(lines) {
   const featureKeywords =
-    /app|platform|booking|flight|search|manage|traveler|travel|gds|ndc|low-cost|lcc|message|push|alert|offline|visa|timatic|payment|ticket/i;
+    /platform|software|solution|tool|app|system|dashboard|automation|manage|track|integrate|analytics|reporting|workflow|payment|booking|search|support|alerts?|notifications?|sync|import|export|ai|data|team|customer|client|sales|marketing/i;
 
   return lines
     .filter(
       (line) =>
         featureKeywords.test(line) &&
-        !/\$|pricing|fee|monthly|per retrieved|available languages|payment gateways/i.test(line),
+        !isPricingLine(line) &&
+        !isBoilerplateLine(line),
     )
-    .filter((line) => line.length >= 24)
+    .filter((line) => line.length >= 22)
     .slice(0, 5);
 }
 
 function extractPackageLines(lines) {
   const packagePatterns = [
-    /(standard|enhanced|enterprise|premium|basic|pro|business)\s*[:|-]/i,
-    /(implementation fee|monthly fee|per retrieved offline booking|push notifications.*monthly fee)/i,
+    /(standard|enhanced|enterprise|premium|basic|starter|professional|pro|business|team|growth|scale)\s*[:|-]/i,
+    /(implementation fee|monthly fee|setup fee|annual fee|license fee|per user|per seat|minimum spend|usage-based|monthly pricing|yearly pricing)/i,
     /\$\s*\d/,
+    /€\s*\d/,
+    /£\s*\d/,
     /includes up to/i,
     /custom pricing applies/i,
+    /contact sales/i,
+    /quote/i,
   ];
 
   return lines
@@ -163,14 +189,20 @@ function formatBulletBlock(lines, emptyMessage) {
 function buildHeuristicContent({ title, extractedText }) {
   const lines = cleanSourceLines(extractedText);
   const description = pickFirstMeaningfulDescription(lines, title);
+  const audience = extractAudienceLines(lines);
   const features = extractFeatureLines(lines);
   const pricing = extractPackageLines(lines);
 
   return {
     description,
+    audience,
     features,
     pricing,
-    hasPackages: pricing.some((line) => /(standard|enhanced|enterprise|premium|basic|pro|business)/i.test(line)),
+    hasPackages: pricing.some((line) =>
+      /(standard|enhanced|enterprise|premium|basic|starter|professional|pro|business|team|growth|scale)/i.test(
+        line,
+      ),
+    ),
   };
 }
 
@@ -275,7 +307,8 @@ async function extractTextFromFile(file) {
 }
 
 function buildFallbackSummary({ url, title, extractedText, languageMode, outputPurpose }) {
-  const { description, features, pricing, hasPackages } = buildHeuristicContent({ title, extractedText });
+  const { description, audience, features, pricing, hasPackages } = buildHeuristicContent({ title, extractedText });
+  const combinedFeatures = [...audience, ...features].slice(0, 5);
 
   const result = {
     mode: "fallback",
@@ -290,10 +323,10 @@ function buildFallbackSummary({ url, title, extractedText, languageMode, outputP
       subject: outputPurpose === "summary" ? title || "Short summary" : title || "Product overview",
       opening:
         outputPurpose === "summary"
-          ? `${title || "This product"} in short: ${description || "the source shows a product focused on booking and trip management."}`
-          : `I wanted to share a quick overview of ${title || "this product"}. ${description || "It appears to focus on simpler booking and trip management."}`,
+          ? `${title || "This product"} in short: ${description || "the source presents a product with a clear business use case and practical feature set."}`
+          : `I wanted to share a quick overview of ${title || "this product"}. ${description || "It appears to offer a practical solution with a clear business focus."}`,
       keyPoints: formatBulletBlock(
-        features,
+        combinedFeatures,
         "- The source did not expose enough clear feature detail for a stronger automatic summary.",
       ),
       plans: pricing.length
@@ -315,10 +348,10 @@ function buildFallbackSummary({ url, title, extractedText, languageMode, outputP
       subject: outputPurpose === "summary" ? title || "Stručné shrnutí" : title || "Přehled produktu",
       opening:
         outputPurpose === "summary"
-          ? `${title || "Tento produkt"} ve zkratce: ${description || "zdroj ukazuje reseni zamerene na rezervace a spravu cest."}`
-          : `Posilam kratky prehled produktu ${title || ""}. ${description || "Jde o reseni zamerene na jednodussi rezervace a spravu cest."}`.trim(),
+          ? `${title || "Tento produkt"} ve zkratce: ${description || "zdroj ukazuje reseni s jasnym byznysovym pouzitim a praktickymi funkcemi."}`
+          : `Posilam kratky prehled produktu ${title || ""}. ${description || "Jde o reseni s jasnym byznysovym zamerenim a praktickym prinosem."}`.trim(),
       keyPoints: formatBulletBlock(
-        features,
+        combinedFeatures,
         "- Ve zdroji nebylo dost jednoznacnych informaci pro lepsi automaticke shrnuti funkci.",
       ),
       plans: pricing.length
@@ -393,6 +426,7 @@ async function generateWithOpenAI({ apiKey, url, title, extractedText, languageM
     "Keep the tone human, clear, short, practical, commercially useful, and mildly engaging.",
     "Avoid hype, repetition, feature dumps, and filler.",
     "Prioritize these extraction goals in this exact order: what the product is, who it is for, the 3 to 5 most relevant features or benefits, and pricing/packages/versions.",
+    "These rules must work for any product website, not only travel websites or SaaS pages.",
     "Focus on what the product is, why it matters, the key differentiators, and a short explanation of package, version, and pricing differences when clearly available.",
     outputPurpose === "summary"
       ? "The result should feel like a compact briefing note, not a client email."
