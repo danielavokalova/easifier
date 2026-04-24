@@ -41,14 +41,14 @@ select {
 
 .page-shell {
   width: min(1640px, calc(100vw - 40px));
-  margin: 16px auto 28px;
+  margin: 10px auto 20px;
 }
 
 .hero {
   display: grid;
   grid-template-columns: minmax(0, 2.35fr) minmax(320px, 0.95fr);
-  gap: 28px;
-  padding: 34px;
+  gap: 22px;
+  padding: 24px 28px;
   border: 1px solid var(--line);
   border-radius: var(--radius-xl);
   background:
@@ -75,15 +75,16 @@ h2 {
 
 h1 {
   max-width: none;
-  font-size: clamp(2.8rem, 6vw, 6.3rem);
+  font-size: clamp(2rem, 4.4vw, 4rem);
+  line-height: 0.98;
 }
 
 .hero-copy {
   max-width: 88ch;
-  margin: 18px 0 0;
+  margin: 12px 0 0;
   color: var(--muted);
-  font-size: 1.08rem;
-  line-height: 1.7;
+  font-size: 1rem;
+  line-height: 1.58;
 }
 
 .hero-card,
@@ -96,7 +97,7 @@ h1 {
 }
 
 .hero-card {
-  padding: 22px;
+  padding: 18px;
   align-self: end;
   background:
     linear-gradient(180deg, rgba(216, 195, 165, 0.7), rgba(247, 243, 236, 0.98));
@@ -106,18 +107,18 @@ h1 {
   margin: 0;
   padding-left: 18px;
   color: var(--muted);
-  line-height: 1.8;
+  line-height: 1.6;
 }
 
 .layout {
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
-  gap: 22px;
-  margin-top: 20px;
+  gap: 18px;
+  margin-top: 12px;
 }
 
 .panel {
-  padding: 20px;
+  padding: 16px;
   background:
     linear-gradient(180deg, rgba(247, 243, 236, 0.99), rgba(234, 231, 220, 0.94));
 }
@@ -127,7 +128,7 @@ h1 {
   justify-content: space-between;
   align-items: center;
   gap: 12px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 
 .subtle,
@@ -146,8 +147,8 @@ h1 {
 .field {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin-bottom: 10px;
 }
 
 .field span {
@@ -189,7 +190,7 @@ select:focus {
 .button-row {
   display: flex;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 
 .button-row.wrap {
@@ -248,7 +249,7 @@ select:focus {
 }
 
 .status-panel {
-  margin-top: 20px;
+  margin-top: 12px;
 }
 
 #statusMessage {
@@ -266,12 +267,12 @@ select:focus {
 
   .page-shell {
     width: min(1640px, calc(100vw - 20px));
-    margin-top: 10px;
+    margin-top: 6px;
   }
 
   .panel,
   .hero {
-    padding: 18px;
+    padding: 14px;
   }
 }
 .notice {
