@@ -65,7 +65,7 @@
             <input
               id="sourceFile"
               type="file"
-              accept=".txt,.md,.html,.htm,.csv,.json,.xml,.pdf,.docx"
+              accept=".txt,.md,.html,.htm,.csv,.json,.xml,.pdf,.docx,.png,.jpg,.jpeg,.webp,.gif,.bmp"
             />
           </label>
 
@@ -88,7 +88,7 @@
             <textarea
               id="sourceText"
               rows="12"
-              placeholder="Paste source text here, or try URL fetch. Manual paste is the most reliable option on public web hosting."
+              placeholder="Paste source text here, try URL fetch, or upload a file/screenshot. Manual paste is still the most reliable option on public web hosting."
             ></textarea>
           </label>
         </section>
@@ -169,6 +169,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.js"></script>
     <script src="https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="./app.js"></script>
   </body>
   </html>

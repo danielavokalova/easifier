@@ -60,6 +60,15 @@ function normalizeWhitespace(input) {
   return input.replace(/\r/g, "").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
 }
 
+async function extractTextFromImage(file) {
+  if (!window.Tesseract) {
+    throw new Error("Image OCR is not available right now.");
+  }
+
+  const result = await window.Tesseract.recognize(file, "eng");
+  return normalizeWhitespace(result?.data?.text || "");
+}
+
 function extractHtmlParts(html) {
   const doc = new DOMParser().parseFromString(html, "text/html");
   doc.querySelectorAll("script, style, noscript, svg, img").forEach((node) => node.remove());
@@ -101,6 +110,13 @@ async function extractTextFromDocx(file) {
 async function extractTextFromFile(file) {
   const name = file.name || "uploaded-file";
   const lowerName = name.toLowerCase();
+
+  if (/\.(png|jpe?g|webp|gif|bmp)$/i.test(lowerName)) {
+    return {
+      title: name.replace(/\.[^.]+$/, ""),
+      text: await extractTextFromImage(file),
+    };
+  }
 
   if (lowerName.endsWith(".pdf")) {
     return {

@@ -92,6 +92,37 @@ function uniqueLines(lines) {
   return result;
 }
 
+function isShortLabelLine(line) {
+  return line.length <= 24 && /^[A-Z0-9 %&()+/-]+$/i.test(line) && /[a-zA-Z]/.test(line);
+}
+
+function isShortValueLine(line) {
+  return line.length <= 18 && /[0-9%$€£]/.test(line);
+}
+
+function combineFactPairs(lines) {
+  const result = [];
+  for (let index = 0; index < lines.length; index += 1) {
+    const current = lines[index];
+    const next = lines[index + 1];
+
+    if (
+      current &&
+      next &&
+      isShortLabelLine(current) &&
+      isShortValueLine(next) &&
+      !/:/.test(current)
+    ) {
+      result.push(`${current}: ${next}`);
+      index += 1;
+      continue;
+    }
+
+    result.push(current);
+  }
+  return uniqueLines(result);
+}
+
 function cleanSourceLines(text) {
   const noisePatterns = [
     /^solutions$/i,
@@ -110,7 +141,7 @@ function cleanSourceLines(text) {
     /^cee blog$/i,
   ];
 
-  return uniqueLines(
+  return combineFactPairs(
     text
       .split("\n")
       .map((line) => line.trim())
@@ -175,6 +206,13 @@ function extractFeatureLines(lines) {
     .slice(0, 5);
 }
 
+function extractFactLines(lines) {
+  return lines
+    .filter((line) => /:/.test(line) || /\b(calories|ingredients|contains|volume|abv|ibu|price|from|starts at)\b/i.test(line))
+    .filter((line) => !isBoilerplateLine(line))
+    .slice(0, 4);
+}
+
 function extractPackageLines(lines) {
   const packagePatterns = [
     /(standard|enhanced|enterprise|premium|basic|starter|professional|pro|business|team|growth|scale)\s*[:|-]/i,
@@ -205,12 +243,14 @@ function buildHeuristicContent({ title, extractedText }) {
   const description = pickFirstMeaningfulDescription(lines, title);
   const audience = extractAudienceLines(lines);
   const features = extractFeatureLines(lines);
+  const facts = extractFactLines(lines);
   const pricing = extractPackageLines(lines);
 
   return {
     description,
     audience,
     features,
+    facts,
     pricing,
     hasPackages: pricing.some((line) =>
       /(standard|enhanced|enterprise|premium|basic|starter|professional|pro|business|team|growth|scale)/i.test(
@@ -256,8 +296,11 @@ function trimForModel(text, maxChars = 18000) {
 }
 
 function buildFallbackSummary({ url, title, extractedText, languageMode, outputPurpose }) {
-  const { description, audience, features, pricing, hasPackages } = buildHeuristicContent({ title, extractedText });
-  const combinedFeatures = [...audience, ...features].slice(0, 5);
+  const { description, audience, features, facts, pricing, hasPackages } = buildHeuristicContent({
+    title,
+    extractedText,
+  });
+  const combinedFeatures = [...audience, ...features, ...facts].slice(0, 5);
 
   const result = {
     mode: "fallback",
