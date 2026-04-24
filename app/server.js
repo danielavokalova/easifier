@@ -51,8 +51,7 @@ async function readBody(req) {
 }
 
 function isSafePath(requestPath) {
-  const resolved = path.normalize(requestPath).replace(/^(\.\.[/\\])+/, "");
-  return resolved;
+  return path.normalize(requestPath).replace(/^(\.\.[/\\])+/, "");
 }
 
 function decodeEntities(input) {
@@ -135,40 +134,48 @@ function buildFallbackSummary({ url, title, extractedText, languageMode }) {
     .filter(Boolean)
     .slice(0, 12);
 
-  const bulletLines = sections
-    .slice(1, 7)
+  const keyLines = sections
+    .slice(1, 5)
     .map((line) => `- ${line}`)
     .join("\n");
 
-  const english = {
-    subject: title || "Product summary",
-    oneLiner: "A concise product summary based on the source page. For bilingual AI output, add an OpenAI API key in the app.",
-    overview:
-      "This draft was generated without AI. It captures source highlights and keeps the source link visible so it can still be shared quickly.",
-    versions: bulletLines || "- Version details were not extracted automatically.",
-    features: bulletLines || "- Feature details were not extracted automatically.",
-    notes: "OpenAI API key is required for polished EN/CZ summaries generated from the source text.",
-  };
+  const planLines = sections
+    .slice(5, 8)
+    .map((line) => `- ${line}`)
+    .join("\n");
 
-  const czech = {
-    subject: title || "Shrnutí produktu",
-    oneLiner:
-      "Stručné shrnutí produktu podle zdrojové stránky. Pro kvalitní dvojjazyčný AI výstup doplň OpenAI API key v aplikaci.",
-    overview:
-      "Tento návrh vznikl bez AI. Zachycuje hlavní body ze zdroje a ponechává viditelný odkaz na zdroj, aby šel rychle sdílet.",
-    versions: bulletLines || "- Detaily verzí se nepodařilo automaticky vytěžit.",
-    features: bulletLines || "- Detaily funkcí se nepodařilo automaticky vytěžit.",
-    notes: "Pro plnohodnotné EN/CZ shrnutí generované ze zdrojového textu je potřeba OpenAI API key.",
-  };
-
-  return {
+  const result = {
     mode: "fallback",
     sourceUrl: url,
     extractedTitle: title,
     languageMode,
-    english,
-    czech,
   };
+
+  if (languageMode === "en" || languageMode === "both") {
+    result.english = {
+      subject: title || "Product overview",
+      opening: `I am sharing a short overview of ${title || "this product"} based on the source page below.`,
+      keyPoints: keyLines || "- Main selling points were not extracted automatically.",
+      plans: planLines || "- Version details were not extracted automatically.",
+      closing:
+        "If useful, I can also prepare a more tailored recommendation based on your business model or target market.",
+      sourceNote: `Source: ${url}`,
+    };
+  }
+
+  if (languageMode === "cs" || languageMode === "both") {
+    result.czech = {
+      subject: title || "Přehled produktu",
+      opening: `Posílám krátký přehled produktu ${title || ""} podle zdrojové stránky níže.`.trim(),
+      keyPoints: keyLines || "- Hlavní přínosy se nepodařilo automaticky vytěžit.",
+      plans: planLines || "- Detaily variant se nepodařilo automaticky vytěžit.",
+      closing:
+        "Pokud budeš chtít, můžu z toho připravit i doporučení podle konkrétního typu agentury nebo cílového trhu.",
+      sourceNote: `Zdroj: ${url}`,
+    };
+  }
+
+  return result;
 }
 
 async function fetchSourceFromUrl(rawUrl) {
@@ -196,7 +203,6 @@ async function fetchSourceFromUrl(rawUrl) {
 
   const html = await response.text();
   const { title, description, chunks, headings } = extractHtmlParts(html);
-
   const combinedText = uniqueLines([title, description, ...chunks]).join("\n");
 
   return {
@@ -216,14 +222,14 @@ function buildOpenAiSchema(languageMode) {
   const sectionSchema = {
     type: "object",
     additionalProperties: false,
-    required: ["subject", "oneLiner", "overview", "versions", "features", "notes"],
+    required: ["subject", "opening", "keyPoints", "plans", "closing", "sourceNote"],
     properties: {
       subject: { type: "string" },
-      oneLiner: { type: "string" },
-      overview: { type: "string" },
-      versions: { type: "string" },
-      features: { type: "string" },
-      notes: { type: "string" },
+      opening: { type: "string" },
+      keyPoints: { type: "string" },
+      plans: { type: "string" },
+      closing: { type: "string" },
+      sourceNote: { type: "string" },
     },
   };
 
@@ -265,13 +271,16 @@ async function generateWithOpenAI({
 }) {
   const schema = buildOpenAiSchema(languageMode);
   const instructions = [
-    "You are generating product summaries for client-facing business emails.",
+    "You are writing short client-facing product emails.",
+    "Do not summarize the whole source page section by section.",
+    "Instead, identify only the most commercially relevant points and turn them into a concise email draft.",
     "Keep the tone human, concise, clear, and commercially useful.",
-    "Avoid hype, fluff, and exaggerated marketing language.",
-    "Always preserve the source URL in the structured response.",
-    "Focus on: what the product is, who it is for, version/package differences, what each important feature means in practice, and any useful constraints.",
+    "Avoid hype, fluff, feature dumps, and exaggerated marketing language.",
+    "Focus on what the product is, why it matters, the key differentiators, and a short explanation of plan/version differences when clearly available.",
+    "Key points should be selective, not exhaustive.",
     "If the page does not clearly define all plans, say that carefully instead of inventing details.",
-    "Write short paragraphs and compact bullet-like blocks, but return them as plain strings.",
+    "Always preserve the source URL in the structured response.",
+    "Write output that is close to ready for sending to a client.",
   ].join(" ");
 
   const prompt = [

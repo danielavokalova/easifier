@@ -65,21 +65,17 @@ function toMarkdownBlock(title, data, sourceUrl) {
     "",
     `**Subject:** ${data.subject}`,
     "",
-    `**One-line summary:** ${data.oneLiner}`,
+    data.opening,
     "",
-    `**Overview**`,
-    data.overview,
+    `**Key points**`,
+    data.keyPoints,
     "",
-    `**Versions / Packages**`,
-    data.versions,
+    `**Plans / versions**`,
+    data.plans,
     "",
-    `**Features explained**`,
-    data.features,
+    data.closing,
     "",
-    `**Notes**`,
-    data.notes,
-    "",
-    `**Source:** ${sourceUrl}`,
+    data.sourceNote || `Source: ${sourceUrl}`,
   ].join("\n");
 }
 
@@ -92,21 +88,17 @@ function toPlainBlock(title, data, sourceUrl) {
     "",
     `Subject: ${data.subject}`,
     "",
-    `One-line summary: ${data.oneLiner}`,
+    `${data.opening}`,
     "",
-    `Overview`,
-    `${data.overview}`,
+    `Key points`,
+    `${data.keyPoints}`,
     "",
-    `Versions / Packages`,
-    `${data.versions}`,
+    `Plans / versions`,
+    `${data.plans}`,
     "",
-    `Features explained`,
-    `${data.features}`,
+    `${data.closing}`,
     "",
-    `Notes`,
-    `${data.notes}`,
-    "",
-    `Source: ${sourceUrl}`,
+    data.sourceNote || `Source: ${sourceUrl}`,
   ].join("\n");
 }
 
@@ -133,16 +125,15 @@ function toHtmlBlock(title, data, sourceUrl) {
     `<section>`,
     `<h2>${escapeHtml(title)}</h2>`,
     `<p><strong>Subject:</strong> ${escapeHtml(data.subject)}</p>`,
-    `<p><strong>One-line summary:</strong> ${escapeHtml(data.oneLiner)}</p>`,
-    `<h3>Overview</h3>`,
-    textToHtmlParagraphs(data.overview),
-    `<h3>Versions / Packages</h3>`,
-    textToHtmlParagraphs(data.versions),
-    `<h3>Features explained</h3>`,
-    textToHtmlParagraphs(data.features),
-    `<h3>Notes</h3>`,
-    textToHtmlParagraphs(data.notes),
-    `<p><strong>Source:</strong> <a href="${escapeHtml(sourceUrl)}">${escapeHtml(sourceUrl)}</a></p>`,
+    textToHtmlParagraphs(data.opening),
+    `<h3>Key points</h3>`,
+    textToHtmlParagraphs(data.keyPoints),
+    `<h3>Plans / versions</h3>`,
+    textToHtmlParagraphs(data.plans),
+    textToHtmlParagraphs(data.closing),
+    `<p><strong>${escapeHtml((data.sourceNote || "Source").split(":")[0])}:</strong> <a href="${escapeHtml(
+      sourceUrl,
+    )}">${escapeHtml(sourceUrl)}</a></p>`,
     `</section>`,
   ].join("");
 }
@@ -219,14 +210,14 @@ function getFilenameBase() {
 
 function buildEmailSubject() {
   if (!state.generated) {
-    return els.sourceTitle.value || "Product summary";
+    return els.sourceTitle.value || "Product overview";
   }
   return (
     state.generated.english?.subject ||
     state.generated.czech?.subject ||
     state.generated.extractedTitle ||
     els.sourceTitle.value ||
-    "Product summary"
+    "Product overview"
   );
 }
 
@@ -234,7 +225,7 @@ function loadDemo() {
   els.sourceUrl.value = "https://www.cee-systems.com/solutions/gol-ibe";
   els.sourceTitle.value = "GOL IBE";
   els.extraInstructions.value =
-    "Keep it concise, client-friendly, and useful for email. Explain plans and key features in plain business language.";
+    "Write this like a short email to a client. Highlight only the most important commercial points and keep it brief.";
   els.sourceText.value = [
     "GOL IBE",
     "Online booking engine for travel agencies.",
@@ -278,7 +269,7 @@ async function fetchSource() {
     });
     els.sourceTitle.value = payload.title || "";
     els.sourceText.value = payload.extractedText || "";
-    setStatus("Source fetched successfully. You can generate the summary now.");
+    setStatus("Source fetched successfully. You can generate the email now.");
   } catch (error) {
     setStatus(error.message, true);
   } finally {
@@ -297,7 +288,7 @@ async function generateSummary() {
 
   try {
     setButtonBusy(els.generateBtn, true, "Generating...");
-    setStatus("Generating client-ready summary...");
+    setStatus("Generating short client-ready email...");
     const payload = await requestJson("/api/generate", {
       method: "POST",
       body: JSON.stringify({
@@ -313,8 +304,8 @@ async function generateSummary() {
     setActiveTab("combined");
     setStatus(
       payload.mode === "openai"
-        ? "AI summary ready. Copy it or export it for email."
-        : "Fallback draft ready. Add an OpenAI API key for polished bilingual output.",
+        ? "Email-style output is ready. Copy it or export it for email."
+        : "Fallback email draft is ready. Add an OpenAI API key for a sharper client-facing version.",
     );
   } catch (error) {
     setStatus(error.message, true);

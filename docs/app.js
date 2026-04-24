@@ -95,55 +95,69 @@ function extractHtmlParts(html) {
   };
 }
 
-function buildFallbackSummary({ url, title, extractedText }) {
+function buildFallbackSummary({ url, title, extractedText, languageMode }) {
   const sections = extractedText
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean)
     .slice(0, 12);
 
-  const bulletLines = sections
-    .slice(1, 7)
+  const keyLines = sections
+    .slice(1, 5)
     .map((line) => `- ${line}`)
     .join("\n");
 
-  return {
+  const planLines = sections
+    .slice(5, 8)
+    .map((line) => `- ${line}`)
+    .join("\n");
+
+  const result = {
     mode: "fallback",
     sourceUrl: url,
     extractedTitle: title,
-    english: {
-      subject: title || "Product summary",
-      oneLiner: "A concise product summary draft based on the pasted or extracted source content.",
-      overview:
-        "This version was prepared without OpenAI. It keeps the main source points visible so you can still reuse it quickly.",
-      versions: bulletLines || "- Version details were not extracted automatically.",
-      features: bulletLines || "- Feature details were not extracted automatically.",
-      notes: "For polished EN/CZ output, add your OpenAI API key in the field above. The key stays only in your browser session.",
-    },
-    czech: {
-      subject: title || "Shrnutí produktu",
-      oneLiner: "Stručný návrh shrnutí produktu podle vloženého nebo vytaženého zdrojového obsahu.",
-      overview:
-        "Tato verze vznikla bez OpenAI. Zachovává hlavní body ze zdroje, aby šla rychle upravit a poslat dál.",
-      versions: bulletLines || "- Detaily verzí se nepodařilo automaticky vytěžit.",
-      features: bulletLines || "- Detaily funkcí se nepodařilo automaticky vytěžit.",
-      notes: "Pro kvalitnější EN/CZ výstup vlož OpenAI API key do pole nahoře. Klíč zůstává jen v této relaci prohlížeče.",
-    },
+    languageMode,
   };
+
+  if (languageMode === "en" || languageMode === "both") {
+    result.english = {
+      subject: title || "Product overview",
+      opening: `I am sharing a short overview of ${title || "this product"} based on the source page below.`,
+      keyPoints: keyLines || "- Main selling points were not extracted automatically.",
+      plans: planLines || "- Plan details were not extracted automatically.",
+      closing:
+        "If useful, I can also prepare a more tailored recommendation based on your business model or target market.",
+      sourceNote: `Source: ${url}`,
+    };
+  }
+
+  if (languageMode === "cs" || languageMode === "both") {
+    result.czech = {
+      subject: title || "Přehled produktu",
+      opening: `Posílám krátký přehled produktu ${title || ""} podle zdrojové stránky níže.`.trim(),
+      keyPoints: keyLines || "- Hlavní přínosy se nepodařilo automaticky vytěžit.",
+      plans: planLines || "- Detaily variant se nepodařilo automaticky vytěžit.",
+      closing:
+        "Pokud budeš chtít, můžu z toho připravit i doporučení podle konkrétního typu agentury nebo cílového trhu.",
+      sourceNote: `Zdroj: ${url}`,
+    };
+  }
+
+  return result;
 }
 
 function buildSchema(languageMode) {
   const sectionSchema = {
     type: "object",
     additionalProperties: false,
-    required: ["subject", "oneLiner", "overview", "versions", "features", "notes"],
+    required: ["subject", "opening", "keyPoints", "plans", "closing", "sourceNote"],
     properties: {
       subject: { type: "string" },
-      oneLiner: { type: "string" },
-      overview: { type: "string" },
-      versions: { type: "string" },
-      features: { type: "string" },
-      notes: { type: "string" },
+      opening: { type: "string" },
+      keyPoints: { type: "string" },
+      plans: { type: "string" },
+      closing: { type: "string" },
+      sourceNote: { type: "string" },
     },
   };
 
@@ -177,12 +191,16 @@ function buildSchema(languageMode) {
 
 async function generateWithOpenAI({ apiKey, url, title, extractedText, languageMode, extraInstructions }) {
   const instructions = [
-    "You are generating concise product summaries for client-facing business emails.",
+    "You are writing short client-facing product emails.",
+    "Do not summarize the entire source page section by section.",
+    "Instead, identify only the most commercially relevant points and turn them into a concise email draft.",
     "Keep the tone human, clear, short, practical, and commercially useful.",
-    "Avoid hype, repetition, and filler.",
-    "Always preserve the source URL.",
-    "Explain what the product is, what the plans or versions are, what the main features mean in practice, and any useful limitations.",
+    "Avoid hype, repetition, feature dumps, and filler.",
+    "Focus on what the product is, why it matters, the key differentiators, and a short explanation of plan/version differences when clearly available.",
+    "Key points should be selective, not exhaustive.",
     "If version details are unclear, state that carefully instead of inventing them.",
+    "Always preserve the source URL.",
+    "Write output that is close to ready for sending to a client.",
   ].join(" ");
 
   const prompt = [
@@ -247,21 +265,17 @@ function toMarkdownBlock(title, data, sourceUrl) {
     "",
     `**Subject:** ${data.subject}`,
     "",
-    `**One-line summary:** ${data.oneLiner}`,
+    data.opening,
     "",
-    `**Overview**`,
-    data.overview,
+    `**Key points**`,
+    data.keyPoints,
     "",
-    `**Versions / Packages**`,
-    data.versions,
+    `**Plans / versions**`,
+    data.plans,
     "",
-    `**Features explained**`,
-    data.features,
+    data.closing,
     "",
-    `**Notes**`,
-    data.notes,
-    "",
-    `**Source:** ${sourceUrl}`,
+    data.sourceNote || `Source: ${sourceUrl}`,
   ].join("\n");
 }
 
@@ -274,21 +288,17 @@ function toPlainBlock(title, data, sourceUrl) {
     "",
     `Subject: ${data.subject}`,
     "",
-    `One-line summary: ${data.oneLiner}`,
+    data.opening,
     "",
-    "Overview",
-    data.overview,
+    "Key points",
+    data.keyPoints,
     "",
-    "Versions / Packages",
-    data.versions,
+    "Plans / versions",
+    data.plans,
     "",
-    "Features explained",
-    data.features,
+    data.closing,
     "",
-    "Notes",
-    data.notes,
-    "",
-    `Source: ${sourceUrl}`,
+    data.sourceNote || `Source: ${sourceUrl}`,
   ].join("\n");
 }
 
@@ -315,16 +325,15 @@ function toHtmlBlock(title, data, sourceUrl) {
     "<section>",
     `<h2>${escapeHtml(title)}</h2>`,
     `<p><strong>Subject:</strong> ${escapeHtml(data.subject)}</p>`,
-    `<p><strong>One-line summary:</strong> ${escapeHtml(data.oneLiner)}</p>`,
-    "<h3>Overview</h3>",
-    textToHtmlParagraphs(data.overview),
-    "<h3>Versions / Packages</h3>",
-    textToHtmlParagraphs(data.versions),
-    "<h3>Features explained</h3>",
-    textToHtmlParagraphs(data.features),
-    "<h3>Notes</h3>",
-    textToHtmlParagraphs(data.notes),
-    `<p><strong>Source:</strong> <a href="${escapeHtml(sourceUrl)}">${escapeHtml(sourceUrl)}</a></p>`,
+    textToHtmlParagraphs(data.opening),
+    "<h3>Key points</h3>",
+    textToHtmlParagraphs(data.keyPoints),
+    "<h3>Plans / versions</h3>",
+    textToHtmlParagraphs(data.plans),
+    textToHtmlParagraphs(data.closing),
+    `<p><strong>${escapeHtml((data.sourceNote || "Source").split(":")[0])}:</strong> <a href="${escapeHtml(
+      sourceUrl,
+    )}">${escapeHtml(sourceUrl)}</a></p>`,
     "</section>",
   ].join("");
 }
@@ -402,7 +411,7 @@ function buildEmailSubject() {
     state.generated?.czech?.subject ||
     state.generated?.extractedTitle ||
     els.sourceTitle.value ||
-    "Product summary"
+    "Product overview"
   );
 }
 
@@ -410,7 +419,7 @@ function loadDemo() {
   els.sourceUrl.value = "https://www.cee-systems.com/solutions/gol-ibe";
   els.sourceTitle.value = "GOL IBE";
   els.extraInstructions.value =
-    "Keep it concise, client-friendly, and useful for email. Explain plans and features in plain business language.";
+    "Write this like a short email to a client. Highlight only the most important commercial points and keep it brief.";
   els.sourceText.value = [
     "GOL IBE",
     "Online booking engine for travel agencies.",
@@ -468,7 +477,7 @@ async function generateSummary() {
 
   try {
     setButtonBusy(els.generateBtn, true, "Generating...");
-    setStatus("Generating clean client-ready summary...");
+    setStatus("Generating short client-ready email...");
 
     const apiKey = els.apiKey.value.trim();
     const languageMode = els.languageMode.value;
@@ -476,13 +485,13 @@ async function generateSummary() {
 
     state.generated = apiKey
       ? await generateWithOpenAI({ apiKey, url, title, extractedText, languageMode, extraInstructions })
-      : buildFallbackSummary({ url, title, extractedText });
+      : buildFallbackSummary({ url, title, extractedText, languageMode });
 
     setActiveTab("combined");
     setStatus(
       apiKey
-        ? "AI summary ready. Copy it, download it, or open a mail draft."
-        : "Fallback draft ready. Add an OpenAI API key for higher-quality bilingual output.",
+        ? "Email-style output is ready. Copy it, download it, or open a mail draft."
+        : "Fallback email draft is ready. Add an OpenAI API key for a sharper client-facing version.",
     );
   } catch (error) {
     setStatus(error.message, true);
