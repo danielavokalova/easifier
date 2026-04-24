@@ -8,6 +8,7 @@ const state = {
 const els = {
   healthBadge: document.getElementById("healthBadge"),
   sourceUrl: document.getElementById("sourceUrl"),
+  sourceFile: document.getElementById("sourceFile"),
   sourceTitle: document.getElementById("sourceTitle"),
   sourceText: document.getElementById("sourceText"),
   extraInstructions: document.getElementById("extraInstructions"),
@@ -92,6 +93,66 @@ function extractHtmlParts(html) {
     title,
     description,
     extractedText: trimForModel(uniqueLines([title, description, ...chunks]).join("\n"), 24000),
+  };
+}
+
+function extractPlainTextFromHtml(html) {
+  return extractHtmlParts(html).extractedText;
+}
+
+async function extractTextFromPdf(file) {
+  if (!window.pdfjsLib) {
+    throw new Error("PDF support is not available right now.");
+  }
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const pages = [];
+  for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber += 1) {
+    const page = await pdf.getPage(pageNumber);
+    const content = await page.getTextContent();
+    pages.push(content.items.map((item) => item.str).join(" "));
+  }
+  return normalizeWhitespace(pages.join("\n\n"));
+}
+
+async function extractTextFromDocx(file) {
+  if (!window.mammoth) {
+    throw new Error("DOCX support is not available right now.");
+  }
+  const arrayBuffer = await file.arrayBuffer();
+  const result = await window.mammoth.extractRawText({ arrayBuffer });
+  return normalizeWhitespace(result.value || "");
+}
+
+async function extractTextFromFile(file) {
+  const name = file.name || "uploaded-file";
+  const lowerName = name.toLowerCase();
+
+  if (lowerName.endsWith(".pdf")) {
+    return {
+      title: name.replace(/\.[^.]+$/, ""),
+      text: await extractTextFromPdf(file),
+    };
+  }
+
+  if (lowerName.endsWith(".docx")) {
+    return {
+      title: name.replace(/\.[^.]+$/, ""),
+      text: await extractTextFromDocx(file),
+    };
+  }
+
+  const rawText = await file.text();
+  if (lowerName.endsWith(".html") || lowerName.endsWith(".htm")) {
+    return {
+      title: name.replace(/\.[^.]+$/, ""),
+      text: extractPlainTextFromHtml(rawText),
+    };
+  }
+
+  return {
+    title: name.replace(/\.[^.]+$/, ""),
+    text: normalizeWhitespace(rawText),
   };
 }
 
@@ -502,6 +563,26 @@ async function generateSummary() {
   }
 }
 
+async function handleFileUpload(event) {
+  const file = event.target.files?.[0];
+  if (!file) {
+    return;
+  }
+
+  try {
+    setStatus(`Reading file: ${file.name}...`);
+    const extracted = await extractTextFromFile(file);
+    els.sourceTitle.value = els.sourceTitle.value || extracted.title;
+    els.sourceText.value = extracted.text || "";
+    if (!els.sourceUrl.value.trim()) {
+      els.sourceUrl.value = `Uploaded file: ${file.name}`;
+    }
+    setStatus(`File loaded: ${file.name}. You can generate the email now.`);
+  } catch (error) {
+    setStatus(`Could not read the uploaded file. ${error.message}`, true);
+  }
+}
+
 function clearSource() {
   els.sourceUrl.value = "";
   els.sourceTitle.value = "";
@@ -528,6 +609,7 @@ function openMailDraft() {
 
 els.healthBadge.textContent = `Browser mode (${OPENAI_MODEL})`;
 els.fetchBtn.addEventListener("click", fetchSource);
+els.sourceFile.addEventListener("change", handleFileUpload);
 els.loadDemoBtn.addEventListener("click", loadDemo);
 els.clearSourceBtn.addEventListener("click", clearSource);
 els.generateBtn.addEventListener("click", generateSummary);

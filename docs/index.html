@@ -61,6 +61,15 @@
           </div>
 
           <label class="field">
+            <span>Upload file</span>
+            <input
+              id="sourceFile"
+              type="file"
+              accept=".txt,.md,.html,.htm,.csv,.json,.xml,.pdf,.docx"
+            />
+          </label>
+
+          <label class="field">
             <span>Detected title</span>
             <input id="sourceTitle" type="text" placeholder="Page title or product name" />
           </label>
@@ -155,6 +164,8 @@
       </section>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.168/pdf.min.js"></script>
+    <script src="https://unpkg.com/mammoth@1.8.0/mammoth.browser.min.js"></script>
     <script src="./app.js"></script>
   </body>
   </html>
