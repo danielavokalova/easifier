@@ -225,8 +225,8 @@ select:focus {
   margin-top: 8px;
   padding: 10px 14px;
   line-height: 1.45;
-  background: rgba(233, 128, 116, 0.12);
-  border: 1px solid rgba(233, 128, 116, 0.2);
+  background: var(--surface);
+  border: 1px solid var(--line);
 }
 
 .notice strong {
