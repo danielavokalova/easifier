@@ -380,21 +380,21 @@ function buildFallbackSummary({ url, title, extractedText, languageMode, outputP
       opening:
         outputPurpose === "summary"
           ? `${title || "This product"} in short: ${description || "the source presents a product with a clear business use case and practical feature set."}`
-          : `I wanted to share a quick overview of ${title || "this product"}. ${description || "It appears to offer a practical solution with a clear business focus."}`,
+          : `I wanted to share a short overview of ${title || "this product"}. ${description || "It appears to offer a practical solution with a clear business focus."} From the source, it looks relevant where a client needs a concise explanation of what the product does and why it matters.`,
       keyPoints: formatBulletBlock(
         combinedFeatures,
         "- The source did not expose enough clear feature detail for a stronger automatic summary.",
       ),
       plans: pricing.length
         ? [
-            hasPackages ? "Packages and pricing at a glance:" : "Pricing at a glance:",
+            hasPackages ? "From the pricing section, these are the main package and fee points:" : "From the pricing section, these are the main points:",
             formatBulletBlock(pricing, ""),
           ].join("\n")
         : "- The source does not show a clearly structured package or pricing breakdown.",
       closing:
         outputPurpose === "summary"
           ? `For more details, see the source here: ${url}`
-          : `If you would like to explore the product in more detail, you can find the full source page here: ${url}`,
+          : `If this looks relevant, I can share more detail, but the full source page is here: ${url}`,
       sourceNote: outputPurpose === "summary" ? `Source: ${url}` : `Read more: ${url}`,
     };
   }
@@ -405,21 +405,21 @@ function buildFallbackSummary({ url, title, extractedText, languageMode, outputP
       opening:
         outputPurpose === "summary"
           ? `${title || "Tento produkt"} ve zkratce: ${description || "zdroj ukazuje reseni s jasnym byznysovym pouzitim a praktickymi funkcemi."}`
-          : `Posilam kratky prehled produktu ${title || ""}. ${description || "Jde o reseni s jasnym byznysovym zamerenim a praktickym prinosem."}`.trim(),
+          : `Posilam kratky prehled produktu ${title || ""}. ${description || "Jde o reseni s jasnym byznysovym zamerenim a praktickym prinosem."} Podle zdroje jde o produkt, ktery se da klientovi vysvetlit rychle a srozumitelne.`.trim(),
       keyPoints: formatBulletBlock(
         combinedFeatures,
         "- Ve zdroji nebylo dost jednoznacnych informaci pro lepsi automaticke shrnuti funkci.",
       ),
       plans: pricing.length
         ? [
-            hasPackages ? "Balicky a ceny v kostce:" : "Ceny v kostce:",
+            hasPackages ? "Z cenove casti jsou nejdulezitejsi tyto body:" : "Z cenove casti jsou nejdulezitejsi tyto body:",
             formatBulletBlock(pricing, ""),
           ].join("\n")
         : "- Zdroj neukazuje jasne rozdeleni balicku ani ceniku.",
       closing:
         outputPurpose === "summary"
           ? `Pro vice detailu je zdroj tady: ${url}`
-          : `Pokud budes chtit projit vice detailu, kompletni zdrojova stranka je tady: ${url}`,
+          : `Pokud to bude pro tebe relevantni, rada poslu vic detailu, ale kompletni zdrojova stranka je tady: ${url}`,
       sourceNote: outputPurpose === "summary" ? `Zdroj: ${url}` : `Vice informaci: ${url}`,
     };
   }
@@ -488,8 +488,20 @@ async function generateWithOpenAI({ apiKey, url, title, extractedText, languageM
       ? "The result should feel like a compact briefing note, not a client email."
       : "The result should feel like a concise email to a client, not an internal summary.",
     outputPurpose === "summary"
+      ? "Keep the flow practical and direct."
+      : "The email must read like a natural note written to a client, with a clear beginning, middle, and end.",
+    outputPurpose === "summary"
+      ? "Avoid letter-style greetings."
+      : "Use a warm, polished, client-friendly tone, but keep it concise and commercially useful.",
+    outputPurpose === "summary"
       ? "Always include the source URL at the end so the reader can check more details."
       : "Always include the source URL in a natural read-more style closing so the client can explore more if interested.",
+    outputPurpose === "summary"
+      ? "Short paragraphs and bullets are fine."
+      : "The opening should be 2 to 3 connected sentences, not a fragment or label.",
+    outputPurpose === "summary"
+      ? "Keep bullets selective."
+      : "Key points should continue naturally from the opening and focus on client value, not raw feature dumping.",
     "Key points should be selective, not exhaustive.",
     "Do not invent package names, tiers, or features that are not clearly present in the source text.",
     "If there are no named plans, do not imply that plans exist. If there is pricing for one product only, summarize it as pricing rather than packages.",
@@ -497,6 +509,7 @@ async function generateWithOpenAI({ apiKey, url, title, extractedText, languageM
     "Always preserve the source URL.",
     "Include a short pricing/packages recap whenever the source clearly provides fees, monthly pricing, implementation pricing, usage limits, or included volume.",
     "If the source provides multiple fees, compress them into a short practical recap instead of copying the whole table verbatim.",
+    "When pricing is included, format it clearly as bullet points or a compact table-like structure, never as one long sentence.",
     "Use only one language, based on the requested language mode.",
     "Write output that is close to ready for sending to a client.",
   ].join(" ");
@@ -555,9 +568,24 @@ async function generateWithOpenAI({ apiKey, url, title, extractedText, languageM
   };
 }
 
-function toMarkdownBlock(title, data, sourceUrl) {
+function toMarkdownBlock(title, data, sourceUrl, outputPurpose) {
   if (!data) {
     return "";
+  }
+  if (outputPurpose === "email") {
+    const { greeting, bridge } = getEmailBridgeText();
+    return [
+      greeting,
+      "",
+      data.opening,
+      "",
+      bridge,
+      data.keyPoints,
+      "",
+      data.plans,
+      "",
+      data.closing,
+    ].join("\n");
   }
   return [
     data.opening,
@@ -570,9 +598,24 @@ function toMarkdownBlock(title, data, sourceUrl) {
   ].join("\n");
 }
 
-function toPlainBlock(title, data, sourceUrl) {
+function toPlainBlock(title, data, sourceUrl, outputPurpose) {
   if (!data) {
     return "";
+  }
+  if (outputPurpose === "email") {
+    const { greeting, bridge } = getEmailBridgeText();
+    return [
+      greeting,
+      "",
+      data.opening,
+      "",
+      bridge,
+      data.keyPoints,
+      "",
+      data.plans,
+      "",
+      data.closing,
+    ].join("\n");
   }
   return [
     data.opening,
@@ -600,9 +643,36 @@ function textToHtmlParagraphs(input) {
     .join("");
 }
 
-function toHtmlBlock(title, data, sourceUrl) {
+function getEmailBridgeText() {
+  if (els.languageMode.value === "cs") {
+    return {
+      greeting: "Dobrý den,",
+      bridge: "Z toho nejdůležitějšího, co je na zdroji vidět:",
+    };
+  }
+
+  return {
+    greeting: "Hi,",
+    bridge: "What seems most relevant from the source:",
+  };
+}
+
+function toHtmlBlock(title, data, sourceUrl, outputPurpose) {
   if (!data) {
     return "";
+  }
+  if (outputPurpose === "email") {
+    const { greeting, bridge } = getEmailBridgeText();
+    return [
+      "<section>",
+      `<p>${escapeHtml(greeting)}</p>`,
+      textToHtmlParagraphs(data.opening),
+      `<p>${escapeHtml(bridge)}</p>`,
+      textToHtmlParagraphs(data.keyPoints),
+      textToHtmlParagraphs(data.plans),
+      textToHtmlParagraphs(data.closing),
+      "</section>",
+    ].join("");
   }
   return [
     "<section>",
@@ -618,6 +688,7 @@ function buildOutputs(generated) {
   const outputMode = els.outputMode.value;
   const sourceUrl = generated.sourceUrl || els.sourceUrl.value.trim();
   const selectedLanguage = els.languageMode.value;
+  const outputPurpose = els.outputPurpose.value;
   const data = selectedLanguage === "cs" ? generated.czech : generated.english;
 
   const render = {
@@ -626,7 +697,7 @@ function buildOutputs(generated) {
     html: toHtmlBlock,
   }[outputMode];
 
-  return data ? render("", data, sourceUrl) : "";
+  return data ? render("", data, sourceUrl, outputPurpose) : "";
 }
 
 function updateOutput() {

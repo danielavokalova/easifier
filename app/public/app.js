@@ -170,9 +170,24 @@ function inferTitleFromReaderText(text, fallbackUrl) {
   }
 }
 
-function toMarkdownBlock(title, data, sourceUrl) {
+function toMarkdownBlock(title, data, sourceUrl, outputPurpose) {
   if (!data) {
     return "";
+  }
+  if (outputPurpose === "email") {
+    const { greeting, bridge } = getEmailBridgeText();
+    return [
+      greeting,
+      "",
+      data.opening,
+      "",
+      bridge,
+      data.keyPoints,
+      "",
+      data.plans,
+      "",
+      data.closing,
+    ].join("\n");
   }
   return [
     data.opening,
@@ -185,9 +200,24 @@ function toMarkdownBlock(title, data, sourceUrl) {
   ].join("\n");
 }
 
-function toPlainBlock(title, data, sourceUrl) {
+function toPlainBlock(title, data, sourceUrl, outputPurpose) {
   if (!data) {
     return "";
+  }
+  if (outputPurpose === "email") {
+    const { greeting, bridge } = getEmailBridgeText();
+    return [
+      greeting,
+      "",
+      `${data.opening}`,
+      "",
+      bridge,
+      `${data.keyPoints}`,
+      "",
+      `${data.plans}`,
+      "",
+      `${data.closing}`,
+    ].join("\n");
   }
   return [
     `${data.opening}`,
@@ -215,9 +245,36 @@ function textToHtmlParagraphs(input) {
     .join("");
 }
 
-function toHtmlBlock(title, data, sourceUrl) {
+function getEmailBridgeText() {
+  if (els.languageMode.value === "cs") {
+    return {
+      greeting: "Dobrý den,",
+      bridge: "Z toho nejdůležitějšího, co je na zdroji vidět:",
+    };
+  }
+
+  return {
+    greeting: "Hi,",
+    bridge: "What seems most relevant from the source:",
+  };
+}
+
+function toHtmlBlock(title, data, sourceUrl, outputPurpose) {
   if (!data) {
     return "";
+  }
+  if (outputPurpose === "email") {
+    const { greeting, bridge } = getEmailBridgeText();
+    return [
+      `<section>`,
+      `<p>${escapeHtml(greeting)}</p>`,
+      textToHtmlParagraphs(data.opening),
+      `<p>${escapeHtml(bridge)}</p>`,
+      textToHtmlParagraphs(data.keyPoints),
+      textToHtmlParagraphs(data.plans),
+      textToHtmlParagraphs(data.closing),
+      `</section>`,
+    ].join("");
   }
   return [
     `<section>`,
@@ -232,6 +289,7 @@ function toHtmlBlock(title, data, sourceUrl) {
 function buildOutputs(generated) {
   const outputMode = els.outputMode.value;
   const sourceUrl = generated.sourceUrl || els.sourceUrl.value.trim();
+  const outputPurpose = els.outputPurpose.value;
   const data = els.languageMode.value === "cs" ? generated.czech : generated.english;
 
   const renderers = {
@@ -241,7 +299,7 @@ function buildOutputs(generated) {
   };
   const render = renderers[outputMode];
 
-  return data ? render("", data, sourceUrl) : "";
+  return data ? render("", data, sourceUrl, outputPurpose) : "";
 }
 
 function updateOutput() {
