@@ -1,15 +1,15 @@
 :root {
-  --bg: #e8ded0;
-  --bg-accent: #d9ccb8;
-  --surface: rgba(255, 252, 247, 0.86);
-  --surface-strong: #fffaf0;
-  --ink: #1e1d1a;
-  --muted: #6c6558;
-  --line: rgba(71, 61, 42, 0.14);
-  --primary: #165d52;
-  --primary-strong: #0d473f;
-  --secondary: #b85f35;
-  --shadow: 0 24px 60px rgba(68, 53, 28, 0.12);
+  --bg: #eae7dc;
+  --bg-accent: #d8c3a5;
+  --surface: rgba(255, 250, 243, 0.92);
+  --surface-strong: #fffaf4;
+  --ink: #2b2925;
+  --muted: #6d6760;
+  --line: rgba(142, 141, 138, 0.28);
+  --primary: #e85a4f;
+  --primary-strong: #e98074;
+  --secondary: #e85a4f;
+  --shadow: 0 26px 60px rgba(142, 141, 138, 0.18);
   --radius-xl: 26px;
   --radius-lg: 18px;
   --radius-md: 12px;
@@ -27,7 +27,8 @@ body {
   font-family: var(--font-body);
   color: var(--ink);
   background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.7), transparent 32%),
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.45), transparent 28%),
+    radial-gradient(circle at top right, rgba(233, 128, 116, 0.12), transparent 26%),
     linear-gradient(135deg, var(--bg), var(--bg-accent));
 }
 
@@ -39,7 +40,7 @@ select {
 }
 
 .page-shell {
-  width: min(1320px, calc(100vw - 96px));
+  width: min(1380px, calc(100vw - 80px));
   margin: 18px auto 32px;
 }
 
@@ -50,7 +51,9 @@ select {
   padding: 34px;
   border: 1px solid var(--line);
   border-radius: var(--radius-xl);
-  background: linear-gradient(140deg, rgba(255, 248, 236, 0.9), rgba(249, 244, 233, 0.74));
+  background:
+    radial-gradient(circle at top right, rgba(232, 90, 79, 0.1), transparent 28%),
+    linear-gradient(140deg, rgba(255, 250, 244, 0.96), rgba(234, 231, 220, 0.9));
   box-shadow: var(--shadow);
 }
 
@@ -95,6 +98,8 @@ h1 {
 .hero-card {
   padding: 22px;
   align-self: end;
+  background:
+    linear-gradient(180deg, rgba(216, 195, 165, 0.36), rgba(255, 250, 243, 0.92));
 }
 
 .hero-card ol {
@@ -106,13 +111,15 @@ h1 {
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 0.96fr);
-  gap: 18px;
+  grid-template-columns: minmax(0, 1.04fr) minmax(0, 1fr);
+  gap: 20px;
   margin-top: 20px;
 }
 
 .panel {
   padding: 18px;
+  background:
+    linear-gradient(180deg, rgba(255, 250, 243, 0.96), rgba(255, 248, 240, 0.92));
 }
 
 .panel-heading {
@@ -132,8 +139,8 @@ h1 {
 .badge {
   padding: 8px 12px;
   border-radius: 999px;
-  background: rgba(22, 93, 82, 0.08);
-  border: 1px solid rgba(22, 93, 82, 0.12);
+  background: rgba(216, 195, 165, 0.28);
+  border: 1px solid rgba(142, 141, 138, 0.22);
 }
 
 .field {
@@ -154,8 +161,8 @@ select {
   width: 100%;
   padding: 12px 14px;
   border-radius: var(--radius-md);
-  border: 1px solid rgba(71, 61, 42, 0.16);
-  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(142, 141, 138, 0.24);
+  background: rgba(255, 252, 247, 0.95);
   color: var(--ink);
   transition: border-color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
 }
@@ -169,8 +176,8 @@ input:focus,
 textarea:focus,
 select:focus {
   outline: none;
-  border-color: rgba(22, 93, 82, 0.48);
-  box-shadow: 0 0 0 4px rgba(22, 93, 82, 0.12);
+  border-color: rgba(232, 90, 79, 0.48);
+  box-shadow: 0 0 0 4px rgba(233, 128, 116, 0.14);
 }
 
 .inline-grid {
@@ -204,19 +211,19 @@ select:focus {
 .button.primary {
   color: #fff;
   background: linear-gradient(135deg, var(--primary), var(--primary-strong));
-  box-shadow: 0 12px 28px rgba(13, 71, 63, 0.22);
+  box-shadow: 0 14px 30px rgba(232, 90, 79, 0.26);
 }
 
 .button.secondary {
   color: var(--ink);
-  background: #f9f3e7;
-  border: 1px solid rgba(71, 61, 42, 0.12);
+  background: rgba(216, 195, 165, 0.28);
+  border: 1px solid rgba(142, 141, 138, 0.2);
 }
 
 .button.ghost {
   color: var(--muted);
   background: transparent;
-  border: 1px dashed rgba(71, 61, 42, 0.16);
+  border: 1px dashed rgba(142, 141, 138, 0.28);
 }
 
 .result-tabs {
@@ -258,7 +265,7 @@ select:focus {
   }
 
   .page-shell {
-    width: min(1320px, calc(100vw - 24px));
+    width: min(1380px, calc(100vw - 28px));
     margin-top: 10px;
   }
 
