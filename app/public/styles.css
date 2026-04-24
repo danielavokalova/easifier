@@ -1,15 +1,15 @@
 :root {
   --bg: #eae7dc;
   --bg-accent: #d8c3a5;
-  --surface: rgba(255, 250, 243, 0.92);
-  --surface-strong: #fffaf4;
+  --surface: rgba(255, 253, 249, 0.98);
+  --surface-strong: #fffdf9;
   --ink: #2b2925;
   --muted: #6d6760;
   --line: rgba(142, 141, 138, 0.28);
   --primary: #e85a4f;
   --primary-strong: #e98074;
   --secondary: #e85a4f;
-  --shadow: 0 26px 60px rgba(142, 141, 138, 0.18);
+  --shadow: 0 28px 70px rgba(126, 112, 94, 0.24);
   --radius-xl: 26px;
   --radius-lg: 18px;
   --radius-md: 12px;
@@ -27,9 +27,9 @@ body {
   font-family: var(--font-body);
   color: var(--ink);
   background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.45), transparent 28%),
-    radial-gradient(circle at top right, rgba(233, 128, 116, 0.12), transparent 26%),
-    linear-gradient(135deg, var(--bg), var(--bg-accent));
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.35), transparent 24%),
+    radial-gradient(circle at top right, rgba(233, 128, 116, 0.2), transparent 24%),
+    linear-gradient(135deg, #eae7dc 0%, #d8c3a5 48%, #d8c3a5 100%);
 }
 
 button,
@@ -40,8 +40,8 @@ select {
 }
 
 .page-shell {
-  width: min(1380px, calc(100vw - 80px));
-  margin: 18px auto 32px;
+  width: min(1520px, calc(100vw - 56px));
+  margin: 16px auto 28px;
 }
 
 .hero {
@@ -52,8 +52,8 @@ select {
   border: 1px solid var(--line);
   border-radius: var(--radius-xl);
   background:
-    radial-gradient(circle at top right, rgba(232, 90, 79, 0.1), transparent 28%),
-    linear-gradient(140deg, rgba(255, 250, 244, 0.96), rgba(234, 231, 220, 0.9));
+    radial-gradient(circle at top right, rgba(232, 90, 79, 0.18), transparent 28%),
+    linear-gradient(140deg, rgba(255, 251, 246, 0.98), rgba(244, 235, 223, 0.96));
   box-shadow: var(--shadow);
 }
 
@@ -99,7 +99,7 @@ h1 {
   padding: 22px;
   align-self: end;
   background:
-    linear-gradient(180deg, rgba(216, 195, 165, 0.36), rgba(255, 250, 243, 0.92));
+    linear-gradient(180deg, rgba(233, 128, 116, 0.18), rgba(255, 250, 243, 0.98));
 }
 
 .hero-card ol {
@@ -111,15 +111,15 @@ h1 {
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.04fr) minmax(0, 1fr);
-  gap: 20px;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 1fr);
+  gap: 22px;
   margin-top: 20px;
 }
 
 .panel {
-  padding: 18px;
+  padding: 20px;
   background:
-    linear-gradient(180deg, rgba(255, 250, 243, 0.96), rgba(255, 248, 240, 0.92));
+    linear-gradient(180deg, rgba(255, 253, 249, 0.99), rgba(255, 250, 244, 0.97));
 }
 
 .panel-heading {
@@ -139,8 +139,8 @@ h1 {
 .badge {
   padding: 8px 12px;
   border-radius: 999px;
-  background: rgba(216, 195, 165, 0.28);
-  border: 1px solid rgba(142, 141, 138, 0.22);
+  background: rgba(233, 128, 116, 0.16);
+  border: 1px solid rgba(232, 90, 79, 0.18);
 }
 
 .field {
@@ -211,13 +211,13 @@ select:focus {
 .button.primary {
   color: #fff;
   background: linear-gradient(135deg, var(--primary), var(--primary-strong));
-  box-shadow: 0 14px 30px rgba(232, 90, 79, 0.26);
+  box-shadow: 0 16px 34px rgba(232, 90, 79, 0.34);
 }
 
 .button.secondary {
   color: var(--ink);
-  background: rgba(216, 195, 165, 0.28);
-  border: 1px solid rgba(142, 141, 138, 0.2);
+  background: rgba(216, 195, 165, 0.46);
+  border: 1px solid rgba(142, 141, 138, 0.24);
 }
 
 .button.ghost {
@@ -265,7 +265,7 @@ select:focus {
   }
 
   .page-shell {
-    width: min(1380px, calc(100vw - 28px));
+    width: min(1520px, calc(100vw - 20px));
     margin-top: 10px;
   }
 
