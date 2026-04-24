@@ -78,6 +78,102 @@ function uniqueLines(lines) {
   return result;
 }
 
+function cleanSourceLines(text) {
+  const noisePatterns = [
+    /^solutions$/i,
+    /^about us$/i,
+    /^contact(s)?$/i,
+    /^pricing$/i,
+    /^thank you!?$/i,
+    /^something went wrong/i,
+    /^terms of service$/i,
+    /^privacy policy$/i,
+    /^cookies$/i,
+    /^all rights reserved/i,
+    /^agencies solutions$/i,
+    /^developer solutions$/i,
+    /^cee news$/i,
+    /^cee blog$/i,
+  ];
+
+  return uniqueLines(
+    text
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .filter((line) => line.length > 2)
+      .filter((line) => !noisePatterns.some((pattern) => pattern.test(line)))
+      .filter((line) => !/^[finxyt|©]+$/i.test(line)),
+  );
+}
+
+function sentenceCase(text) {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function pickFirstMeaningfulDescription(lines, title) {
+  const titleLower = (title || "").toLowerCase();
+  return (
+    lines.find((line) => {
+      const lower = line.toLowerCase();
+      return (
+        lower !== titleLower &&
+        line.length >= 28 &&
+        !/\$|pricing|monthly fee|implementation fee|available languages|payment gateways/i.test(line)
+      );
+    }) || ""
+  );
+}
+
+function extractFeatureLines(lines) {
+  const featureKeywords =
+    /app|platform|booking|flight|search|manage|traveler|travel|gds|ndc|low-cost|lcc|message|push|alert|offline|visa|timatic|payment|ticket/i;
+
+  return lines
+    .filter(
+      (line) =>
+        featureKeywords.test(line) &&
+        !/\$|pricing|fee|monthly|per retrieved|available languages|payment gateways/i.test(line),
+    )
+    .filter((line) => line.length >= 24)
+    .slice(0, 5);
+}
+
+function extractPackageLines(lines) {
+  const packagePatterns = [
+    /(standard|enhanced|enterprise|premium|basic|pro|business)\s*[:|-]/i,
+    /(implementation fee|monthly fee|per retrieved offline booking|push notifications.*monthly fee)/i,
+    /\$\s*\d/,
+    /includes up to/i,
+    /custom pricing applies/i,
+  ];
+
+  return lines
+    .filter((line) => packagePatterns.some((pattern) => pattern.test(line)))
+    .slice(0, 6);
+}
+
+function formatBulletBlock(lines, emptyMessage) {
+  if (!lines.length) {
+    return emptyMessage;
+  }
+  return lines.map((line) => `- ${sentenceCase(line)}`).join("\n");
+}
+
+function buildHeuristicContent({ title, extractedText }) {
+  const lines = cleanSourceLines(extractedText);
+  const description = pickFirstMeaningfulDescription(lines, title);
+  const features = extractFeatureLines(lines);
+  const pricing = extractPackageLines(lines);
+
+  return {
+    description,
+    features,
+    pricing,
+    hasPackages: pricing.some((line) => /(standard|enhanced|enterprise|premium|basic|pro|business)/i.test(line)),
+  };
+}
+
 function extractHtmlParts(html) {
   const doc = new DOMParser().parseFromString(html, "text/html");
   doc.querySelectorAll("script, style, noscript, svg, img").forEach((node) => node.remove());
@@ -179,21 +275,7 @@ async function extractTextFromFile(file) {
 }
 
 function buildFallbackSummary({ url, title, extractedText, languageMode, outputPurpose }) {
-  const sections = extractedText
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .slice(0, 12);
-
-  const keyLines = sections
-    .slice(1, 5)
-    .map((line) => `- ${line}`)
-    .join("\n");
-
-  const planLines = sections
-    .slice(5, 8)
-    .map((line) => `- ${line}`)
-    .join("\n");
+  const { description, features, pricing, hasPackages } = buildHeuristicContent({ title, extractedText });
 
   const result = {
     mode: "fallback",
@@ -208,10 +290,18 @@ function buildFallbackSummary({ url, title, extractedText, languageMode, outputP
       subject: outputPurpose === "summary" ? title || "Short summary" : title || "Product overview",
       opening:
         outputPurpose === "summary"
-          ? `Short summary of ${title || "this product"} based on the source content below.`
-          : `I am sharing a short overview of ${title || "this product"} based on the source page below.`,
-      keyPoints: keyLines || "- Main selling points were not extracted automatically.",
-      plans: planLines || "- Pricing or package details were not extracted automatically.",
+          ? `${title || "This product"} in short: ${description || "the source shows a product focused on booking and trip management."}`
+          : `I wanted to share a quick overview of ${title || "this product"}. ${description || "It appears to focus on simpler booking and trip management."}`,
+      keyPoints: formatBulletBlock(
+        features,
+        "- The source did not expose enough clear feature detail for a stronger automatic summary.",
+      ),
+      plans: pricing.length
+        ? [
+            hasPackages ? "Packages and pricing at a glance:" : "Pricing at a glance:",
+            formatBulletBlock(pricing, ""),
+          ].join("\n")
+        : "- The source does not show a clearly structured package or pricing breakdown.",
       closing:
         outputPurpose === "summary"
           ? `For more details, see the source here: ${url}`
@@ -225,15 +315,23 @@ function buildFallbackSummary({ url, title, extractedText, languageMode, outputP
       subject: outputPurpose === "summary" ? title || "Stručné shrnutí" : title || "Přehled produktu",
       opening:
         outputPurpose === "summary"
-          ? `Stručné shrnutí produktu ${title || ""} podle zdrojového obsahu níže.`.trim()
-          : `Posílám krátký přehled produktu ${title || ""} podle zdrojové stránky níže.`.trim(),
-      keyPoints: keyLines || "- Hlavní přínosy se nepodařilo automaticky vytěžit.",
-      plans: planLines || "- Detaily cen nebo balíčků se nepodařilo automaticky vytěžit.",
+          ? `${title || "Tento produkt"} ve zkratce: ${description || "zdroj ukazuje reseni zamerene na rezervace a spravu cest."}`
+          : `Posilam kratky prehled produktu ${title || ""}. ${description || "Jde o reseni zamerene na jednodussi rezervace a spravu cest."}`.trim(),
+      keyPoints: formatBulletBlock(
+        features,
+        "- Ve zdroji nebylo dost jednoznacnych informaci pro lepsi automaticke shrnuti funkci.",
+      ),
+      plans: pricing.length
+        ? [
+            hasPackages ? "Balicky a ceny v kostce:" : "Ceny v kostce:",
+            formatBulletBlock(pricing, ""),
+          ].join("\n")
+        : "- Zdroj neukazuje jasne rozdeleni balicku ani ceniku.",
       closing:
         outputPurpose === "summary"
-          ? `Pro více detailů je zdroj tady: ${url}`
-          : `Pokud si budeš chtít projít více detailů, kompletní zdrojová stránka je tady: ${url}`,
-      sourceNote: outputPurpose === "summary" ? `Zdroj: ${url}` : `Více informací: ${url}`,
+          ? `Pro vice detailu je zdroj tady: ${url}`
+          : `Pokud budes chtit projit vice detailu, kompletni zdrojova stranka je tady: ${url}`,
+      sourceNote: outputPurpose === "summary" ? `Zdroj: ${url}` : `Vice informaci: ${url}`,
     };
   }
 
@@ -294,6 +392,7 @@ async function generateWithOpenAI({ apiKey, url, title, extractedText, languageM
       : "Instead, identify only the most commercially relevant points and turn them into a concise email draft.",
     "Keep the tone human, clear, short, practical, commercially useful, and mildly engaging.",
     "Avoid hype, repetition, feature dumps, and filler.",
+    "Prioritize these extraction goals in this exact order: what the product is, who it is for, the 3 to 5 most relevant features or benefits, and pricing/packages/versions.",
     "Focus on what the product is, why it matters, the key differentiators, and a short explanation of package, version, and pricing differences when clearly available.",
     outputPurpose === "summary"
       ? "The result should feel like a compact briefing note, not a client email."
@@ -303,9 +402,11 @@ async function generateWithOpenAI({ apiKey, url, title, extractedText, languageM
       : "Always include the source URL in a natural read-more style closing so the client can explore more if interested.",
     "Key points should be selective, not exhaustive.",
     "Do not invent package names, tiers, or features that are not clearly present in the source text.",
+    "If there are no named plans, do not imply that plans exist. If there is pricing for one product only, summarize it as pricing rather than packages.",
     "If version, package, or pricing details are unclear, state that carefully instead of inventing them.",
     "Always preserve the source URL.",
-    "Include a short pricing/packages recap when the source clearly provides it.",
+    "Include a short pricing/packages recap whenever the source clearly provides fees, monthly pricing, implementation pricing, usage limits, or included volume.",
+    "If the source provides multiple fees, compress them into a short practical recap instead of copying the whole table verbatim.",
     "Use only one language, based on the requested language mode.",
     "Write output that is close to ready for sending to a client.",
   ].join(" ");
