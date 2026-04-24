@@ -225,7 +225,7 @@ function loadDemo() {
   els.sourceUrl.value = "https://www.cee-systems.com/solutions/gol-ibe";
   els.sourceTitle.value = "GOL IBE";
   els.extraInstructions.value =
-    "Write this like a short email to a client. Highlight only the most important commercial points and keep it brief.";
+    "Write this like a short email to a client. Highlight only the most important commercial points, keep it brief, and always include a natural read-more link to the source page.";
   els.sourceText.value = [
     "GOL IBE",
     "Online booking engine for travel agencies.",

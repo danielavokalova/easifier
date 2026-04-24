@@ -158,8 +158,8 @@ function buildFallbackSummary({ url, title, extractedText, languageMode }) {
       keyPoints: keyLines || "- Main selling points were not extracted automatically.",
       plans: planLines || "- Version details were not extracted automatically.",
       closing:
-        "If useful, I can also prepare a more tailored recommendation based on your business model or target market.",
-      sourceNote: `Source: ${url}`,
+        `If you would like to explore the product in more detail, you can find the full source page here: ${url}`,
+      sourceNote: `Read more: ${url}`,
     };
   }
 
@@ -170,8 +170,8 @@ function buildFallbackSummary({ url, title, extractedText, languageMode }) {
       keyPoints: keyLines || "- Hlavní přínosy se nepodařilo automaticky vytěžit.",
       plans: planLines || "- Detaily variant se nepodařilo automaticky vytěžit.",
       closing:
-        "Pokud budeš chtít, můžu z toho připravit i doporučení podle konkrétního typu agentury nebo cílového trhu.",
-      sourceNote: `Zdroj: ${url}`,
+        `Pokud si budeš chtít projít více detailů, kompletní zdrojová stránka je tady: ${url}`,
+      sourceNote: `Více informací: ${url}`,
     };
   }
 
@@ -274,9 +274,11 @@ async function generateWithOpenAI({
     "You are writing short client-facing product emails.",
     "Do not summarize the whole source page section by section.",
     "Instead, identify only the most commercially relevant points and turn them into a concise email draft.",
-    "Keep the tone human, concise, clear, and commercially useful.",
+    "Keep the tone human, concise, clear, commercially useful, and mildly engaging.",
     "Avoid hype, fluff, feature dumps, and exaggerated marketing language.",
     "Focus on what the product is, why it matters, the key differentiators, and a short explanation of plan/version differences when clearly available.",
+    "The result should feel like a concise email to a client, not an internal summary.",
+    "Always include the source URL in a natural read-more style closing so the client can explore more if interested.",
     "Key points should be selective, not exhaustive.",
     "If the page does not clearly define all plans, say that carefully instead of inventing details.",
     "Always preserve the source URL in the structured response.",

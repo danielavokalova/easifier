@@ -126,8 +126,8 @@ function buildFallbackSummary({ url, title, extractedText, languageMode }) {
       keyPoints: keyLines || "- Main selling points were not extracted automatically.",
       plans: planLines || "- Plan details were not extracted automatically.",
       closing:
-        "If useful, I can also prepare a more tailored recommendation based on your business model or target market.",
-      sourceNote: `Source: ${url}`,
+        `If you would like to explore the product in more detail, you can find the full source page here: ${url}`,
+      sourceNote: `Read more: ${url}`,
     };
   }
 
@@ -138,8 +138,8 @@ function buildFallbackSummary({ url, title, extractedText, languageMode }) {
       keyPoints: keyLines || "- Hlavní přínosy se nepodařilo automaticky vytěžit.",
       plans: planLines || "- Detaily variant se nepodařilo automaticky vytěžit.",
       closing:
-        "Pokud budeš chtít, můžu z toho připravit i doporučení podle konkrétního typu agentury nebo cílového trhu.",
-      sourceNote: `Zdroj: ${url}`,
+        `Pokud si budeš chtít projít více detailů, kompletní zdrojová stránka je tady: ${url}`,
+      sourceNote: `Více informací: ${url}`,
     };
   }
 
@@ -194,9 +194,11 @@ async function generateWithOpenAI({ apiKey, url, title, extractedText, languageM
     "You are writing short client-facing product emails.",
     "Do not summarize the entire source page section by section.",
     "Instead, identify only the most commercially relevant points and turn them into a concise email draft.",
-    "Keep the tone human, clear, short, practical, and commercially useful.",
+    "Keep the tone human, clear, short, practical, commercially useful, and mildly engaging.",
     "Avoid hype, repetition, feature dumps, and filler.",
     "Focus on what the product is, why it matters, the key differentiators, and a short explanation of plan/version differences when clearly available.",
+    "The result should feel like a concise email to a client, not an internal summary.",
+    "Always include the source URL in a natural read-more style closing so the client can explore more if interested.",
     "Key points should be selective, not exhaustive.",
     "If version details are unclear, state that carefully instead of inventing them.",
     "Always preserve the source URL.",
@@ -419,7 +421,7 @@ function loadDemo() {
   els.sourceUrl.value = "https://www.cee-systems.com/solutions/gol-ibe";
   els.sourceTitle.value = "GOL IBE";
   els.extraInstructions.value =
-    "Write this like a short email to a client. Highlight only the most important commercial points and keep it brief.";
+    "Write this like a short email to a client. Highlight only the most important commercial points, keep it brief, and always include a natural read-more link to the source page.";
   els.sourceText.value = [
     "GOL IBE",
     "Online booking engine for travel agencies.",
