@@ -2,7 +2,6 @@ const OPENAI_MODEL = "gpt-5-mini";
 
 const state = {
   generated: null,
-  activeTab: "combined",
 };
 
 const els = {
@@ -29,7 +28,6 @@ const els = {
   downloadMdBtn: document.getElementById("downloadMdBtn"),
   downloadHtmlBtn: document.getElementById("downloadHtmlBtn"),
   mailtoBtn: document.getElementById("mailtoBtn"),
-  tabs: Array.from(document.querySelectorAll(".tab")),
 };
 
 function setStatus(message, isError = false) {
@@ -182,7 +180,7 @@ function buildFallbackSummary({ url, title, extractedText, languageMode, outputP
     outputPurpose,
   };
 
-  if (languageMode === "en" || languageMode === "both") {
+  if (languageMode === "en") {
     result.english = {
       subject: outputPurpose === "summary" ? title || "Short summary" : title || "Product overview",
       opening:
@@ -190,10 +188,7 @@ function buildFallbackSummary({ url, title, extractedText, languageMode, outputP
           ? `Short summary of ${title || "this product"} based on the source content below.`
           : `I am sharing a short overview of ${title || "this product"} based on the source page below.`,
       keyPoints: keyLines || "- Main selling points were not extracted automatically.",
-      plans:
-        outputPurpose === "summary"
-          ? planLines || "- Version details were not extracted automatically."
-          : planLines || "- Plan details were not extracted automatically.",
+      plans: planLines || "- Pricing or package details were not extracted automatically.",
       closing:
         outputPurpose === "summary"
           ? `For more details, see the source here: ${url}`
@@ -202,7 +197,7 @@ function buildFallbackSummary({ url, title, extractedText, languageMode, outputP
     };
   }
 
-  if (languageMode === "cs" || languageMode === "both") {
+  if (languageMode === "cs") {
     result.czech = {
       subject: outputPurpose === "summary" ? title || "Stručné shrnutí" : title || "Přehled produktu",
       opening:
@@ -210,7 +205,7 @@ function buildFallbackSummary({ url, title, extractedText, languageMode, outputP
           ? `Stručné shrnutí produktu ${title || ""} podle zdrojového obsahu níže.`.trim()
           : `Posílám krátký přehled produktu ${title || ""} podle zdrojové stránky níže.`.trim(),
       keyPoints: keyLines || "- Hlavní přínosy se nepodařilo automaticky vytěžit.",
-      plans: planLines || "- Detaily variant se nepodařilo automaticky vytěžit.",
+      plans: planLines || "- Detaily cen nebo balíčků se nepodařilo automaticky vytěžit.",
       closing:
         outputPurpose === "summary"
           ? `Pro více detailů je zdroj tady: ${url}`
@@ -243,11 +238,11 @@ function buildSchema(languageMode) {
   };
   const required = ["sourceUrl", "extractedTitle"];
 
-  if (languageMode === "en" || languageMode === "both") {
+  if (languageMode === "en") {
     properties.english = sectionSchema;
     required.push("english");
   }
-  if (languageMode === "cs" || languageMode === "both") {
+  if (languageMode === "cs") {
     properties.czech = sectionSchema;
     required.push("czech");
   }
@@ -276,7 +271,7 @@ async function generateWithOpenAI({ apiKey, url, title, extractedText, languageM
       : "Instead, identify only the most commercially relevant points and turn them into a concise email draft.",
     "Keep the tone human, clear, short, practical, commercially useful, and mildly engaging.",
     "Avoid hype, repetition, feature dumps, and filler.",
-    "Focus on what the product is, why it matters, the key differentiators, and a short explanation of plan/version differences when clearly available.",
+    "Focus on what the product is, why it matters, the key differentiators, and a short explanation of package, version, and pricing differences when clearly available.",
     outputPurpose === "summary"
       ? "The result should feel like a compact briefing note, not a client email."
       : "The result should feel like a concise email to a client, not an internal summary.",
@@ -284,8 +279,11 @@ async function generateWithOpenAI({ apiKey, url, title, extractedText, languageM
       ? "Always include the source URL at the end so the reader can check more details."
       : "Always include the source URL in a natural read-more style closing so the client can explore more if interested.",
     "Key points should be selective, not exhaustive.",
-    "If version details are unclear, state that carefully instead of inventing them.",
+    "Do not invent package names, tiers, or features that are not clearly present in the source text.",
+    "If version, package, or pricing details are unclear, state that carefully instead of inventing them.",
     "Always preserve the source URL.",
+    "Include a short pricing/packages recap when the source clearly provides it.",
+    "Use only one language, based on the requested language mode.",
     "Write output that is close to ready for sending to a client.",
   ].join(" ");
 
@@ -348,21 +346,13 @@ function toMarkdownBlock(title, data, sourceUrl) {
     return "";
   }
   return [
-    `## ${title}`,
-    "",
-    `**Subject:** ${data.subject}`,
-    "",
     data.opening,
     "",
-    `**Key points**`,
     data.keyPoints,
     "",
-    `**Plans / versions**`,
     data.plans,
     "",
     data.closing,
-    "",
-    data.sourceNote || `Source: ${sourceUrl}`,
   ].join("\n");
 }
 
@@ -371,21 +361,13 @@ function toPlainBlock(title, data, sourceUrl) {
     return "";
   }
   return [
-    title,
-    "",
-    `Subject: ${data.subject}`,
-    "",
     data.opening,
     "",
-    "Key points",
     data.keyPoints,
     "",
-    "Plans / versions",
     data.plans,
     "",
     data.closing,
-    "",
-    data.sourceNote || `Source: ${sourceUrl}`,
   ].join("\n");
 }
 
@@ -410,27 +392,19 @@ function toHtmlBlock(title, data, sourceUrl) {
   }
   return [
     "<section>",
-    `<h2>${escapeHtml(title)}</h2>`,
-    `<p><strong>Subject:</strong> ${escapeHtml(data.subject)}</p>`,
     textToHtmlParagraphs(data.opening),
-    "<h3>Key points</h3>",
     textToHtmlParagraphs(data.keyPoints),
-    "<h3>Plans / versions</h3>",
     textToHtmlParagraphs(data.plans),
     textToHtmlParagraphs(data.closing),
-    `<p><strong>${escapeHtml((data.sourceNote || "Source").split(":")[0])}:</strong> <a href="${escapeHtml(
-      sourceUrl,
-    )}">${escapeHtml(sourceUrl)}</a></p>`,
     "</section>",
   ].join("");
 }
 
 function buildOutputs(generated) {
   const outputMode = els.outputMode.value;
-  const outputPurpose = generated.outputPurpose || els.outputPurpose.value || "email";
   const sourceUrl = generated.sourceUrl || els.sourceUrl.value.trim();
-  const english = generated.english || null;
-  const czech = generated.czech || null;
+  const selectedLanguage = els.languageMode.value;
+  const data = selectedLanguage === "cs" ? generated.czech : generated.english;
 
   const render = {
     plain: toPlainBlock,
@@ -438,15 +412,7 @@ function buildOutputs(generated) {
     html: toHtmlBlock,
   }[outputMode];
 
-  const pieces = {
-    english: english
-      ? render(outputPurpose === "summary" ? "English Summary" : "English Email", english, sourceUrl)
-      : "",
-    czech: czech ? render(outputPurpose === "summary" ? "Czech Summary" : "Czech Email", czech, sourceUrl) : "",
-  };
-
-  pieces.combined = [pieces.english, pieces.czech].filter(Boolean).join(outputMode === "html" ? "<hr>" : "\n\n");
-  return pieces;
+  return data ? render("", data, sourceUrl) : "";
 }
 
 function updateOutput() {
@@ -454,16 +420,7 @@ function updateOutput() {
     els.resultText.value = "";
     return;
   }
-  const outputs = buildOutputs(state.generated);
-  els.resultText.value = outputs[state.activeTab] || outputs.combined || "";
-}
-
-function setActiveTab(tab) {
-  state.activeTab = tab;
-  for (const button of els.tabs) {
-    button.classList.toggle("active", button.dataset.tab === tab);
-  }
-  updateOutput();
+  els.resultText.value = buildOutputs(state.generated) || "";
 }
 
 async function copyToClipboard(text, successMessage) {
@@ -500,8 +457,7 @@ function buildEmailSubject() {
     return state.generated?.extractedTitle || els.sourceTitle.value || "Short summary";
   }
   return (
-    state.generated?.english?.subject ||
-    state.generated?.czech?.subject ||
+    (els.languageMode.value === "cs" ? state.generated?.czech?.subject : state.generated?.english?.subject) ||
     state.generated?.extractedTitle ||
     els.sourceTitle.value ||
     "Product overview"
@@ -512,8 +468,9 @@ function loadDemo() {
   els.sourceUrl.value = "https://www.cee-systems.com/solutions/gol-ibe";
   els.sourceTitle.value = "GOL IBE";
   els.extraInstructions.value =
-    "Write this like a short email to a client. Highlight only the most important commercial points, keep it brief, and always include a natural read-more link to the source page.";
+    "Write this as a short, friendly client email. Keep only the key points, include pricing/packages only if clearly stated, do not invent tiers, and end with one natural source link.";
   els.outputPurpose.value = "email";
+  els.languageMode.value = "en";
   els.sourceText.value = [
     "GOL IBE",
     "Online booking engine for travel agencies.",
@@ -522,8 +479,7 @@ function loadDemo() {
     "Supports one-way, return, and multi-city search.",
     "Offers branded fares, baggage details, promo codes, online payment, manual and automated ticketing.",
     "Includes admin console, service fee settings, airline commissions, dealer sales, Flight Watchdog, MultiPCC, custom domain, and meta-search integration.",
-    "Plans: Standard, Enhanced, Enterprise.",
-    "Standard: $0/month, Travelport+ fee $1.67, Travelfusion fee $3.60, deposit $390/year.",
+    "Pricing details may vary depending on setup and selected scope.",
     "Enhanced: $210/month, Travelport+ fee $1.43, deposit $630/year, includes around 250 Flight Watchdog watchers and up to 20 dealers.",
     "Enterprise: $460/month, Travelport+ fee $1.19, deposit $940/year, includes around 500 watchers, up to 250 dealers, MultiPCC, custom domain, automated e-ticketing, manual ticketing, meta-search integration.",
   ].join("\n");
@@ -582,7 +538,7 @@ async function generateSummary() {
       ? await generateWithOpenAI({ apiKey, url, title, extractedText, languageMode, outputPurpose, extraInstructions })
       : buildFallbackSummary({ url, title, extractedText, languageMode, outputPurpose });
 
-    setActiveTab("combined");
+    updateOutput();
     setStatus(
       apiKey
         ? outputPurpose === "summary"
@@ -679,6 +635,6 @@ els.downloadHtmlBtn.addEventListener("click", () => {
 els.mailtoBtn.addEventListener("click", openMailDraft);
 els.outputMode.addEventListener("change", updateOutput);
 els.outputPurpose.addEventListener("change", updateOutput);
-els.tabs.forEach((tab) => tab.addEventListener("click", () => setActiveTab(tab.dataset.tab)));
+els.languageMode.addEventListener("change", updateOutput);
 
 loadDemo();

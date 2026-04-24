@@ -152,7 +152,7 @@ function buildFallbackSummary({ url, title, extractedText, languageMode, outputP
     outputPurpose,
   };
 
-  if (languageMode === "en" || languageMode === "both") {
+  if (languageMode === "en") {
     result.english = {
       subject: outputPurpose === "summary" ? title || "Short summary" : title || "Product overview",
       opening:
@@ -160,7 +160,7 @@ function buildFallbackSummary({ url, title, extractedText, languageMode, outputP
           ? `Short summary of ${title || "this product"} based on the source content below.`
           : `I am sharing a short overview of ${title || "this product"} based on the source page below.`,
       keyPoints: keyLines || "- Main selling points were not extracted automatically.",
-      plans: planLines || "- Version details were not extracted automatically.",
+      plans: planLines || "- Pricing or package details were not extracted automatically.",
       closing:
         outputPurpose === "summary"
           ? `For more details, see the source here: ${url}`
@@ -169,7 +169,7 @@ function buildFallbackSummary({ url, title, extractedText, languageMode, outputP
     };
   }
 
-  if (languageMode === "cs" || languageMode === "both") {
+  if (languageMode === "cs") {
     result.czech = {
       subject: outputPurpose === "summary" ? title || "Stručné shrnutí" : title || "Přehled produktu",
       opening:
@@ -177,7 +177,7 @@ function buildFallbackSummary({ url, title, extractedText, languageMode, outputP
           ? `Stručné shrnutí produktu ${title || ""} podle zdrojového obsahu níže.`.trim()
           : `Posílám krátký přehled produktu ${title || ""} podle zdrojové stránky níže.`.trim(),
       keyPoints: keyLines || "- Hlavní přínosy se nepodařilo automaticky vytěžit.",
-      plans: planLines || "- Detaily variant se nepodařilo automaticky vytěžit.",
+      plans: planLines || "- Detaily cen nebo balíčků se nepodařilo automaticky vytěžit.",
       closing:
         outputPurpose === "summary"
           ? `Pro více detailů je zdroj tady: ${url}`
@@ -292,7 +292,7 @@ async function generateWithOpenAI({
       : "Instead, identify only the most commercially relevant points and turn them into a concise email draft.",
     "Keep the tone human, concise, clear, commercially useful, and mildly engaging.",
     "Avoid hype, fluff, feature dumps, and exaggerated marketing language.",
-    "Focus on what the product is, why it matters, the key differentiators, and a short explanation of plan/version differences when clearly available.",
+    "Focus on what the product is, why it matters, the key differentiators, and a short explanation of package, version, and pricing differences when clearly available.",
     outputPurpose === "summary"
       ? "The result should feel like a compact briefing note, not a client email."
       : "The result should feel like a concise email to a client, not an internal summary.",
@@ -300,8 +300,11 @@ async function generateWithOpenAI({
       ? "Always include the source URL at the end so the reader can check more details."
       : "Always include the source URL in a natural read-more style closing so the client can explore more if interested.",
     "Key points should be selective, not exhaustive.",
-    "If the page does not clearly define all plans, say that carefully instead of inventing details.",
+    "Do not invent package names, tiers, or features that are not clearly present in the source text.",
+    "If the page does not clearly define all plans, packages, or prices, say that carefully instead of inventing details.",
     "Always preserve the source URL in the structured response.",
+    "Include a short pricing/packages recap when the source clearly provides it.",
+    "Use only one language, based on the requested language mode.",
     "Write output that is close to ready for sending to a client.",
   ].join(" ");
 
@@ -401,7 +404,7 @@ async function handleApi(req, res, pathname) {
     const title = body.title || "";
     const extractedText = normalizeWhitespace(body.extractedText || "");
     const outputPurpose = ["email", "summary"].includes(body.outputPurpose) ? body.outputPurpose : "email";
-    const languageMode = ["en", "cs", "both"].includes(body.languageMode) ? body.languageMode : "both";
+    const languageMode = ["en", "cs"].includes(body.languageMode) ? body.languageMode : "en";
     const extraInstructions = normalizeWhitespace(body.extraInstructions || "");
 
     if (!url || !extractedText) {

@@ -1,6 +1,5 @@
 const state = {
   generated: null,
-  activeTab: "combined",
 };
 
 const els = {
@@ -26,7 +25,6 @@ const els = {
   downloadMdBtn: document.getElementById("downloadMdBtn"),
   downloadHtmlBtn: document.getElementById("downloadHtmlBtn"),
   mailtoBtn: document.getElementById("mailtoBtn"),
-  tabs: Array.from(document.querySelectorAll(".tab")),
 };
 
 function setStatus(message, isError = false) {
@@ -138,21 +136,13 @@ function toMarkdownBlock(title, data, sourceUrl) {
     return "";
   }
   return [
-    `## ${title}`,
-    "",
-    `**Subject:** ${data.subject}`,
-    "",
     data.opening,
     "",
-    `**Key points**`,
     data.keyPoints,
     "",
-    `**Plans / versions**`,
     data.plans,
     "",
     data.closing,
-    "",
-    data.sourceNote || `Source: ${sourceUrl}`,
   ].join("\n");
 }
 
@@ -161,21 +151,13 @@ function toPlainBlock(title, data, sourceUrl) {
     return "";
   }
   return [
-    `${title}`,
-    "",
-    `Subject: ${data.subject}`,
-    "",
     `${data.opening}`,
     "",
-    `Key points`,
     `${data.keyPoints}`,
     "",
-    `Plans / versions`,
     `${data.plans}`,
     "",
     `${data.closing}`,
-    "",
-    data.sourceNote || `Source: ${sourceUrl}`,
   ].join("\n");
 }
 
@@ -200,27 +182,18 @@ function toHtmlBlock(title, data, sourceUrl) {
   }
   return [
     `<section>`,
-    `<h2>${escapeHtml(title)}</h2>`,
-    `<p><strong>Subject:</strong> ${escapeHtml(data.subject)}</p>`,
     textToHtmlParagraphs(data.opening),
-    `<h3>Key points</h3>`,
     textToHtmlParagraphs(data.keyPoints),
-    `<h3>Plans / versions</h3>`,
     textToHtmlParagraphs(data.plans),
     textToHtmlParagraphs(data.closing),
-    `<p><strong>${escapeHtml((data.sourceNote || "Source").split(":")[0])}:</strong> <a href="${escapeHtml(
-      sourceUrl,
-    )}">${escapeHtml(sourceUrl)}</a></p>`,
     `</section>`,
   ].join("");
 }
 
 function buildOutputs(generated) {
   const outputMode = els.outputMode.value;
-  const outputPurpose = generated.outputPurpose || els.outputPurpose.value || "email";
   const sourceUrl = generated.sourceUrl || els.sourceUrl.value.trim();
-  const english = generated.english || null;
-  const czech = generated.czech || null;
+  const data = els.languageMode.value === "cs" ? generated.czech : generated.english;
 
   const renderers = {
     plain: toPlainBlock,
@@ -229,15 +202,7 @@ function buildOutputs(generated) {
   };
   const render = renderers[outputMode];
 
-  const pieces = {
-    english: english
-      ? render(outputPurpose === "summary" ? "English Summary" : "English Email", english, sourceUrl)
-      : "",
-    czech: czech ? render(outputPurpose === "summary" ? "Czech Summary" : "Czech Email", czech, sourceUrl) : "",
-  };
-
-  pieces.combined = [pieces.english, pieces.czech].filter(Boolean).join(outputMode === "html" ? "<hr>" : "\n\n");
-  return pieces;
+  return data ? render("", data, sourceUrl) : "";
 }
 
 function updateOutput() {
@@ -245,18 +210,7 @@ function updateOutput() {
     els.resultText.value = "";
     return;
   }
-
-  const outputs = buildOutputs(state.generated);
-  const value = outputs[state.activeTab] || outputs.combined || "";
-  els.resultText.value = value;
-}
-
-function setActiveTab(tab) {
-  state.activeTab = tab;
-  for (const button of els.tabs) {
-    button.classList.toggle("active", button.dataset.tab === tab);
-  }
-  updateOutput();
+  els.resultText.value = buildOutputs(state.generated) || "";
 }
 
 async function copyToClipboard(text, successMessage) {
@@ -296,8 +250,7 @@ function buildEmailSubject() {
     return els.sourceTitle.value || "Product overview";
   }
   return (
-    state.generated.english?.subject ||
-    state.generated.czech?.subject ||
+    (els.languageMode.value === "cs" ? state.generated.czech?.subject : state.generated.english?.subject) ||
     state.generated.extractedTitle ||
     els.sourceTitle.value ||
     "Product overview"
@@ -308,8 +261,9 @@ function loadDemo() {
   els.sourceUrl.value = "https://www.cee-systems.com/solutions/gol-ibe";
   els.sourceTitle.value = "GOL IBE";
   els.extraInstructions.value =
-    "Write this like a short email to a client. Highlight only the most important commercial points, keep it brief, and always include a natural read-more link to the source page.";
+    "Write this as a short, friendly client email. Keep only the key points, include pricing/packages only if clearly stated, do not invent tiers, and end with one natural source link.";
   els.outputPurpose.value = "email";
+  els.languageMode.value = "en";
   els.sourceText.value = [
     "GOL IBE",
     "Online booking engine for travel agencies.",
@@ -318,8 +272,7 @@ function loadDemo() {
     "Supports one-way, return, and multi-city search.",
     "Offers branded fares, baggage details, promo codes, online payment, manual and automated ticketing.",
     "Includes admin console, service fee settings, airline commissions, dealer sales, Flight Watchdog, MultiPCC, custom domain, and meta-search integration.",
-    "Plans: Standard, Enhanced, Enterprise.",
-    "Standard: $0/month, Travelport+ fee $1.67, Travelfusion fee $3.60, deposit $390/year.",
+    "Pricing details may vary depending on setup and selected scope.",
     "Enhanced: $210/month, Travelport+ fee $1.43, deposit $630/year, includes around 250 Flight Watchdog watchers and up to 20 dealers.",
     "Enterprise: $460/month, Travelport+ fee $1.19, deposit $940/year, includes around 500 watchers, up to 250 dealers, MultiPCC, custom domain, automated e-ticketing, manual ticketing, meta-search integration.",
   ].join("\n");
@@ -386,7 +339,7 @@ async function generateSummary() {
       }),
     });
     state.generated = payload;
-    setActiveTab("combined");
+    updateOutput();
     setStatus(
       payload.mode === "openai"
         ? els.outputPurpose.value === "summary"
@@ -473,9 +426,7 @@ els.downloadHtmlBtn.addEventListener("click", () => {
 els.mailtoBtn.addEventListener("click", openMailDraft);
 els.outputMode.addEventListener("change", updateOutput);
 els.outputPurpose.addEventListener("change", updateOutput);
-els.tabs.forEach((tab) => {
-  tab.addEventListener("click", () => setActiveTab(tab.dataset.tab));
-});
+els.languageMode.addEventListener("change", updateOutput);
 
 refreshHealth();
 loadDemo();

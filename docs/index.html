@@ -18,7 +18,7 @@
           <h1>No Fluff. Just the Meat.</h1>
           <p class="hero-copy">
             Built for quick product overviews you can actually use. Pull from a URL, pasted text, or file,
-            then turn it into a client email or a short summary in English, Czech, or both.
+            then turn it into a client email or a short summary in English or Czech.
           </p>
           <div class="hero-actions">
             <a class="button primary" href="#workspace">Open workspace</a>
@@ -111,7 +111,6 @@
             <label class="field">
               <span>Language</span>
               <select id="languageMode">
-                <option value="both">English + Czech</option>
                 <option value="en">English only</option>
                 <option value="cs">Czech only</option>
               </select>
@@ -142,12 +141,6 @@
           <div class="button-row wrap">
             <button id="generateBtn" class="button primary">Generate summary</button>
             <button id="clearBtn" class="button ghost">Clear output</button>
-          </div>
-
-          <div class="result-tabs">
-            <button class="tab active" data-tab="combined">Combined</button>
-            <button class="tab" data-tab="english">English</button>
-            <button class="tab" data-tab="czech">Czech</button>
           </div>
 
           <label class="field">
