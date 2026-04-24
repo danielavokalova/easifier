@@ -603,13 +603,12 @@ function toMarkdownBlock(title, data, sourceUrl, outputPurpose) {
     return "";
   }
   if (outputPurpose === "email") {
-    const { greeting, bridge } = getEmailBridgeText();
+    const { greeting } = getEmailBridgeText();
     return [
       greeting,
       "",
       data.opening,
       "",
-      bridge,
       sanitizeEmailLines(data.keyPoints),
       "",
       sanitizeEmailLines(data.plans),
@@ -633,13 +632,12 @@ function toPlainBlock(title, data, sourceUrl, outputPurpose) {
     return "";
   }
   if (outputPurpose === "email") {
-    const { greeting, bridge } = getEmailBridgeText();
+    const { greeting } = getEmailBridgeText();
     return [
       greeting,
       "",
       data.opening,
       "",
-      bridge,
       sanitizeEmailLines(data.keyPoints),
       "",
       sanitizeEmailLines(data.plans),
@@ -701,12 +699,11 @@ function toHtmlBlock(title, data, sourceUrl, outputPurpose) {
     return "";
   }
   if (outputPurpose === "email") {
-    const { greeting, bridge } = getEmailBridgeText();
+    const { greeting } = getEmailBridgeText();
     return [
       "<section>",
       `<p>${escapeHtml(greeting)}</p>`,
       textToHtmlParagraphs(data.opening),
-      `<p>${escapeHtml(bridge)}</p>`,
       textToHtmlParagraphs(sanitizeEmailLines(data.keyPoints)),
       textToHtmlParagraphs(sanitizeEmailLines(data.plans)),
       textToHtmlParagraphs(data.closing),
