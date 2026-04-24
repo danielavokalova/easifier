@@ -354,27 +354,27 @@ function buildFallbackSummary({ url, title, extractedText, languageMode, outputP
       subject: outputPurpose === "summary" ? title || "Stručné shrnutí" : title || "Přehled produktu",
       opening:
         outputPurpose === "summary"
-          ? `${title || "Tento produkt"} ve zkratce: ${description || "zdroj ukazuje reseni s jasnym byznysovym pouzitim a praktickymi funkcemi."}`
-          : `Posilam kratky prehled produktu ${title || ""}. ${description || "Jde o reseni s jasnym byznysovym zamerenim a praktickym prinosem."} Podle zdroje jde o produkt, ktery se da klientovi vysvetlit rychle a srozumitelne.`.trim(),
+          ? `${title || "Tento produkt"} ve zkratce: ${description || "zdroj ukazuje řešení s jasným byznysovým použitím a praktickými funkcemi."}`
+          : `Posílám krátký přehled produktu ${title || ""}. ${description || "Jde o řešení s jasným byznysovým zaměřením a praktickým přínosem."} Podle zdroje jde o produkt, který se dá klientovi vysvětlit rychle a srozumitelně.`.trim(),
       keyPoints: listFormatter(
         combinedFeatures,
         outputPurpose === "email"
-          ? "Ve zdroji nebylo dost jednoznacnych informaci pro lepsi automaticke shrnuti funkci."
-          : "- Ve zdroji nebylo dost jednoznacnych informaci pro lepsi automaticke shrnuti funkci.",
+          ? "Ve zdroji nebylo dost jednoznačných informací pro lepší automatické shrnutí funkcí."
+          : "- Ve zdroji nebylo dost jednoznačných informací pro lepší automatické shrnutí funkcí.",
       ),
       plans: pricing.length
         ? [
-            hasPackages ? "Z cenove casti jsou nejdulezitejsi tyto body:" : "Z cenove casti jsou nejdulezitejsi tyto body:",
+            "Z cenové části jsou nejdůležitější tyto body:",
             listFormatter(pricing, ""),
           ].join("\n")
         : outputPurpose === "email"
-          ? "Zdroj neukazuje jasne rozdeleni balicku ani ceniku."
-          : "- Zdroj neukazuje jasne rozdeleni balicku ani ceniku.",
+          ? "Zdroj neukazuje jasné rozdělení balíčků ani ceníku."
+          : "- Zdroj neukazuje jasné rozdělení balíčků ani ceníku.",
       closing:
         outputPurpose === "summary"
-          ? `Pro vice detailu je zdroj tady: ${url}`
-          : `Pokud to bude pro tebe relevantni, rada poslu vic detailu, ale kompletni zdrojova stranka je tady: ${url}`,
-      sourceNote: outputPurpose === "summary" ? `Zdroj: ${url}` : `Vice informaci: ${url}`,
+          ? `Pro více detailů je zdroj tady: ${url}`
+          : `Pokud to bude pro tebe relevantní, ráda pošlu víc detailů, ale kompletní zdrojová stránka je tady: ${url}`,
+      sourceNote: outputPurpose === "summary" ? `Zdroj: ${url}` : `Více informací: ${url}`,
     };
   }
 
@@ -474,60 +474,58 @@ async function generateWithOpenAI({
   extraInstructions,
 }) {
   const schema = buildOpenAiSchema(languageMode);
+  const languageName = languageMode === "cs" ? "Czech" : "English";
   const instructions = [
     outputPurpose === "summary"
       ? "You are writing short internal product summaries."
-      : "You are writing short client-facing product emails.",
-    "Do not summarize the whole source page section by section.",
+      : "You are writing short, polished, client-ready product emails.",
+
     outputPurpose === "summary"
-      ? "Identify only the most relevant points and turn them into a concise practical summary."
-      : "Instead, identify only the most commercially relevant points and turn them into a concise email draft.",
-    "Keep the tone human, concise, clear, commercially useful, and mildly engaging.",
-    "Avoid hype, fluff, feature dumps, and exaggerated marketing language.",
-    "Prioritize these extraction goals in this exact order: what the product is, who it is for, the 3 to 5 most relevant features or benefits, and pricing/packages/versions.",
-    "These rules must work for any product website, not only travel websites or SaaS pages.",
-    "Focus on what the product is, why it matters, the key differentiators, and a short explanation of package, version, and pricing differences when clearly available.",
-    outputPurpose === "summary"
-      ? "The result should feel like a compact briefing note, not a client email."
-      : "The result should feel like a concise email to a client, not an internal summary.",
-    outputPurpose === "summary"
-      ? "Keep the flow practical and direct."
-      : "The email must read like a natural note written to a client, with a clear beginning, middle, and end.",
-    outputPurpose === "summary"
-      ? "Avoid letter-style greetings."
-      : "Use a warm, polished, client-friendly tone, but keep it concise and commercially useful.",
-    outputPurpose === "summary"
-      ? "Always include the source URL at the end so the reader can check more details."
-      : "Always include the source URL in a natural read-more style closing so the client can explore more if interested.",
-    outputPurpose === "summary"
-      ? "Short paragraphs and bullets are fine."
-      : "The opening should be 2 to 3 connected sentences, not a fragment or label.",
-    outputPurpose === "summary"
-      ? "Keep bullets selective."
-      : "Key points should continue naturally from the opening and focus on client value, not raw feature dumping.",
-    outputPurpose === "summary"
-      ? "A simple structure is enough."
-      : "Use this email structure: greeting, one short intro explaining what the email is about, key product value and features, versions only if clearly confirmed by the source, a clear pricing recap, then a short closing that invites further interest and includes the source link.",
-    outputPurpose === "summary"
-      ? "Markdown is acceptable."
-      : "Do not use markdown markers or decorative symbols such as #, *, -, or bullet characters in the email body.",
-    outputPurpose === "summary"
-      ? "You may summarize uncertain pricing carefully."
-      : "Do not mention package names such as Standard, Basic, Pro, Enhanced, Enterprise, or similar unless they are clearly visible in the source.",
-    outputPurpose === "summary"
-      ? "Keep it factual."
-      : "The email should be interesting and client-friendly, but never pushy or overhyped.",
-    "Key points should be selective, not exhaustive.",
-    "Do not invent package names, tiers, or features that are not clearly present in the source text.",
-    "If there are no named plans, do not imply that plans exist. If there is pricing for one product only, summarize it as pricing rather than packages.",
-    "If the page does not clearly define all plans, packages, or prices, say that carefully instead of inventing details.",
-    "Always preserve the source URL in the structured response.",
-    "Include a short pricing/packages recap whenever the source clearly provides fees, monthly pricing, implementation pricing, usage limits, or included volume.",
-    "If the source provides multiple fees, compress them into a short practical recap instead of copying the whole table verbatim.",
-    "When pricing is included, format it clearly as bullet points or a compact table-like structure, never as one long sentence.",
-    "Use only one language, based on the requested language mode.",
-    "Write output that is close to ready for sending to a client.",
-  ].join(" ");
+      ? "GOAL\nTurn the source text into a compact briefing note a colleague can read in under a minute."
+      : "GOAL\nTurn the source text into a concise, natural client email that is close to ready-to-send. It must read like a thoughtful note written by a person, not a marketing brochure or a feature dump.",
+
+    "EXTRACTION PRIORITY (follow in this order)\n1. What the product is and who it is for\n2. The 3 to 5 most commercially relevant features or benefits\n3. Pricing, packages, or version differences — only when clearly stated in the source",
+
+    "TONE\nWarm, professional, commercially useful. No hype, no exclamation marks, no phrases like 'game-changing' or 'cutting-edge'.",
+
+    [
+      "FIELD FORMAT",
+      `opening: ${
+        outputPurpose === "summary"
+          ? "1 to 2 sentences. State what the product is and who it is for."
+          : "2 to 3 connected sentences. Introduce the product and give one reason why it could be relevant to the client. Vary the opener — do not always start with 'I wanted to share'."
+      }`,
+      `keyPoints: ${
+        outputPurpose === "summary"
+          ? "Short list. One fact or benefit per line. Use - as bullet marker. Maximum 5 items."
+          : "Each point on its own line. No bullet markers (no -, *, •, or any other symbol). One clear fact or benefit per line, written as a complete thought. Maximum 5 lines."
+      }`,
+      `plans: ${
+        outputPurpose === "summary"
+          ? "If pricing or packages are visible, list each on its own line. If not, write one sentence saying so."
+          : "If pricing or packages are clearly stated in the source, list each on its own line as: Name: price · key detail. If no clear pricing exists, write: 'Pricing is available on request.' No bullet markers."
+      }`,
+      `closing: ${
+        outputPurpose === "summary"
+          ? "One sentence pointing to the source URL."
+          : "One natural sentence inviting further interest. Include the source URL naturally, for example: 'The full product page is here: [url]'."
+      }`,
+      "sourceNote: The source URL only.",
+    ].join("\n"),
+
+    [
+      "STRICT RULES",
+      outputPurpose === "email"
+        ? "No markdown in the output: no #, *, -, •, ~ or any formatting characters."
+        : "Markdown bullets are acceptable in keyPoints and plans.",
+      "No invented features, package names, or prices — only what is clearly stated in the source.",
+      "Only mention package names (Standard, Basic, Enhanced, Enterprise, etc.) if they appear in the source.",
+      "If pricing is for one product only, call it 'pricing', not 'packages' or 'tiers'.",
+      "If version or pricing details are unclear, say so briefly instead of guessing.",
+      `Write the entire output in ${languageName} only. No mixed languages.`,
+      "Output must be close to ready for sending.",
+    ].join("\n"),
+  ].join("\n\n");
 
   const prompt = [
     `Source URL: ${url}`,

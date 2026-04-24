@@ -181,9 +181,9 @@ function toMarkdownBlock(title, data, sourceUrl, outputPurpose) {
       "",
       data.opening,
       "",
-      sanitizeEmailLines(data.keyPoints),
+      toEmailMarkdownList(data.keyPoints),
       "",
-      sanitizeEmailLines(data.plans),
+      toEmailMarkdownList(data.plans),
       "",
       data.closing,
     ].join("\n");
@@ -208,23 +208,23 @@ function toPlainBlock(title, data, sourceUrl, outputPurpose) {
     return [
       greeting,
       "",
-      `${data.opening}`,
+      data.opening,
       "",
-      sanitizeEmailLines(`${data.keyPoints}`),
+      normalizeEmailLines(data.keyPoints),
       "",
-      sanitizeEmailLines(`${data.plans}`),
+      normalizeEmailLines(data.plans),
       "",
-      `${data.closing}`,
+      data.closing,
     ].join("\n");
   }
   return [
-    `${data.opening}`,
+    data.opening,
     "",
-    `${data.keyPoints}`,
+    data.keyPoints,
     "",
-    `${data.plans}`,
+    data.plans,
     "",
-    `${data.closing}`,
+    data.closing,
   ].join("\n");
 }
 
@@ -257,13 +257,27 @@ function getEmailBridgeText() {
   };
 }
 
-function sanitizeEmailLines(input) {
+function normalizeEmailLines(input) {
   return (input || "")
     .split("\n")
     .map((line) => line.trim())
     .filter(Boolean)
-    .map((line) => line.replace(/^[-*#•]+\s*/, ""))
+    .map((line) => line.replace(/^[-*#•·]+\s*/, ""))
     .join("\n");
+}
+
+function toEmailMarkdownList(input) {
+  return normalizeEmailLines(input)
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => `- ${line}`)
+    .join("\n");
+}
+
+function toEmailHtmlList(input) {
+  const lines = normalizeEmailLines(input).split("\n").filter(Boolean);
+  if (!lines.length) return "";
+  return `<ul>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>`;
 }
 
 function toHtmlBlock(title, data, sourceUrl, outputPurpose) {
@@ -273,22 +287,22 @@ function toHtmlBlock(title, data, sourceUrl, outputPurpose) {
   if (outputPurpose === "email") {
     const { greeting } = getEmailBridgeText();
     return [
-      `<section>`,
+      "<section>",
       `<p>${escapeHtml(greeting)}</p>`,
       textToHtmlParagraphs(data.opening),
-      textToHtmlParagraphs(sanitizeEmailLines(data.keyPoints)),
-      textToHtmlParagraphs(sanitizeEmailLines(data.plans)),
+      toEmailHtmlList(data.keyPoints),
+      toEmailHtmlList(data.plans),
       textToHtmlParagraphs(data.closing),
-      `</section>`,
+      "</section>",
     ].join("");
   }
   return [
-    `<section>`,
+    "<section>",
     textToHtmlParagraphs(data.opening),
-    textToHtmlParagraphs(data.keyPoints),
-    textToHtmlParagraphs(data.plans),
+    toEmailHtmlList(data.keyPoints),
+    toEmailHtmlList(data.plans),
     textToHtmlParagraphs(data.closing),
-    `</section>`,
+    "</section>",
   ].join("");
 }
 
