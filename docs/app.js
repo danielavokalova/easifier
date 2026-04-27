@@ -537,12 +537,12 @@ async function generateWithOpenAI({ apiKey, url, title, extractedText, languageM
       `keyPoints: ${
         outputPurpose === "summary"
           ? "Short list. One fact or benefit per line. Use - as bullet marker. Maximum 5 items."
-          : "Write 'Key product highlights:' on the first line. Then list 5-7 bullet points using - as the marker. Each bullet should be a specific, concrete capability or benefit — not vague marketing language."
+          : "Write 'Key product highlights:' on the first line. Then list 5-7 bullet points using - as the marker. Each bullet must be a specific, concrete fact or capability (e.g. what content it covers, who it serves, what it enables). Do not include marketing adjectives, image references, or duplicated points."
       }`,
       `plans: ${
         outputPurpose === "summary"
           ? "If pricing or packages are visible, list each on its own line. If not, write one sentence saying so."
-          : "Write 'Plans at a glance (public pricing):' on the first line, then a blank line. For each named plan write 'N) Plan name' as a numbered heading, then bullet points (using -) for each pricing item and key limit. After all plans, if additional fees or conditions are mentioned, add a blank line then 'Additional cost notes:' and list them as bullets. Use blank lines between plan blocks. If no named plans exist, describe the pricing clearly. If no pricing at all, write: 'Pricing is available on request.'"
+          : "Write 'Plans at a glance (public pricing):' on the first line, then a blank line. If the source shows named plan tiers (e.g. Standard, Enhanced, Enterprise), write 'N) Plan name' as a numbered heading and list fee items as bullet points underneath. If no named tiers exist but pricing figures are shown, list each as a bullet in the format '- Fee label: amount' — do not create separate numbered items for the label and the amount. After main pricing, if there are additional fees or conditions, add 'Additional cost notes:' and list them as bullets. If no pricing at all, write: 'Pricing is available on request.'"
       }`,
       `closing: ${
         outputPurpose === "summary"
@@ -762,11 +762,16 @@ function toHtmlBlock(title, data, sourceUrl, outputPurpose) {
 function sanitizeEmailField(text) {
   if (!text) return text;
   return text
+    .replace(/^-\s*!\[.*?\]\(.*?\)\s*$/gm, "")
+    .replace(/!\[.*?\]\(.*?\)/g, "")
     .replace(/^\*\s+/gm, "- ")
     .replace(/^#{1,6}\s+/gm, "")
     .replace(/\*\*\*([^*\n]+)\*\*\*/g, "$1")
     .replace(/\*\*([^*\n]+)\*\*/g, "$1")
-    .replace(/\*([^*\n]+)\*/g, "$1");
+    .replace(/\*([^*\n]+)\*/g, "$1")
+    .replace(/\s\*\s/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function deduplicateUrl(text, url) {

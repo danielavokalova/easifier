@@ -326,11 +326,16 @@ function toHtmlBlock(title, data, sourceUrl, outputPurpose) {
 function sanitizeEmailField(text) {
   if (!text) return text;
   return text
+    .replace(/^-\s*!\[.*?\]\(.*?\)\s*$/gm, "")
+    .replace(/!\[.*?\]\(.*?\)/g, "")
     .replace(/^\*\s+/gm, "- ")
     .replace(/^#{1,6}\s+/gm, "")
     .replace(/\*\*\*([^*\n]+)\*\*\*/g, "$1")
     .replace(/\*\*([^*\n]+)\*\*/g, "$1")
-    .replace(/\*([^*\n]+)\*/g, "$1");
+    .replace(/\*([^*\n]+)\*/g, "$1")
+    .replace(/\s\*\s/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function deduplicateUrl(text, url) {
