@@ -555,8 +555,11 @@ async function generateWithOpenAI({ apiKey, url, title, extractedText, languageM
     [
       "STRICT RULES",
       outputPurpose === "email"
-        ? "In opening and closing: no markdown markers (#, *, ~, _). In keyPoints and plans: use - for bullets and N) for numbered items — these sections are structured lists."
+        ? "Never use *, **, ***, #, ##, or any markdown formatting in any field. The only allowed list marker is - for bullet points and N) for numbered plan headings. No bold, no italic, no headings."
         : "Markdown bullets are acceptable in keyPoints and plans.",
+      outputPurpose === "email"
+        ? "The source URL must appear exactly once, only in the closing field. Do not include it in opening, keyPoints, or plans."
+        : "",
       "No invented features, package names, or prices — only what is clearly stated in the source.",
       "Only mention package names (Standard, Basic, Enhanced, Enterprise, etc.) if they appear in the source.",
       "If pricing is for one product only, call it 'pricing', not 'packages' or 'tiers'.",
@@ -756,22 +759,56 @@ function toHtmlBlock(title, data, sourceUrl, outputPurpose) {
   ].join("");
 }
 
+function sanitizeEmailField(text) {
+  if (!text) return text;
+  return text
+    .replace(/^\*\s+/gm, "- ")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/\*\*\*([^*\n]+)\*\*\*/g, "$1")
+    .replace(/\*\*([^*\n]+)\*\*/g, "$1")
+    .replace(/\*([^*\n]+)\*/g, "$1");
+}
+
+function deduplicateUrl(text, url) {
+  if (!url || !text) return text;
+  const escaped = url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(escaped, "g");
+  const matches = [...text.matchAll(regex)];
+  if (matches.length <= 1) return text;
+  let count = 0;
+  return text.replace(regex, () => (++count < matches.length ? "" : url));
+}
+
 function buildOutputs(generated) {
   const outputMode = els.outputMode.value;
   const sourceUrl = generated.sourceUrl || els.sourceUrl.value.trim();
   const selectedLanguage = els.languageMode.value;
   const outputPurpose = els.outputPurpose.value;
-  const data = selectedLanguage === "cs" ? generated.czech : generated.english;
-  if (!data) return "";
+  const raw = selectedLanguage === "cs" ? generated.czech : generated.english;
+  if (!raw) return "";
+
+  const data =
+    outputPurpose === "email"
+      ? {
+          ...raw,
+          opening: sanitizeEmailField(raw.opening),
+          keyPoints: sanitizeEmailField(raw.keyPoints),
+          plans: sanitizeEmailField(raw.plans),
+          closing: sanitizeEmailField(raw.closing),
+        }
+      : raw;
 
   const render = { plain: toPlainBlock, markdown: toMarkdownBlock, html: toHtmlBlock }[outputMode];
-  const body = render("", data, sourceUrl, outputPurpose);
+  let body = render("", data, sourceUrl, outputPurpose);
 
-  if (outputPurpose === "email" && data.subject) {
-    if (outputMode === "html") {
-      return `<p><strong>Subject: ${escapeHtml(data.subject)}</strong></p>${body}`;
+  if (outputPurpose === "email") {
+    if (outputMode !== "html") body = deduplicateUrl(body, sourceUrl);
+    if (data.subject) {
+      if (outputMode === "html") {
+        return `<p><strong>Subject: ${escapeHtml(data.subject)}</strong></p>${body}`;
+      }
+      return `Subject: ${data.subject}\n\n${body}`;
     }
-    return `Subject: ${data.subject}\n\n${body}`;
   }
   return body;
 }

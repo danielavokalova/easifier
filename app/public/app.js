@@ -323,21 +323,55 @@ function toHtmlBlock(title, data, sourceUrl, outputPurpose) {
   ].join("");
 }
 
+function sanitizeEmailField(text) {
+  if (!text) return text;
+  return text
+    .replace(/^\*\s+/gm, "- ")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/\*\*\*([^*\n]+)\*\*\*/g, "$1")
+    .replace(/\*\*([^*\n]+)\*\*/g, "$1")
+    .replace(/\*([^*\n]+)\*/g, "$1");
+}
+
+function deduplicateUrl(text, url) {
+  if (!url || !text) return text;
+  const escaped = url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(escaped, "g");
+  const matches = [...text.matchAll(regex)];
+  if (matches.length <= 1) return text;
+  let count = 0;
+  return text.replace(regex, () => (++count < matches.length ? "" : url));
+}
+
 function buildOutputs(generated) {
   const outputMode = els.outputMode.value;
   const sourceUrl = generated.sourceUrl || els.sourceUrl.value.trim();
   const outputPurpose = els.outputPurpose.value;
-  const data = els.languageMode.value === "cs" ? generated.czech : generated.english;
-  if (!data) return "";
+  const raw = els.languageMode.value === "cs" ? generated.czech : generated.english;
+  if (!raw) return "";
+
+  const data =
+    outputPurpose === "email"
+      ? {
+          ...raw,
+          opening: sanitizeEmailField(raw.opening),
+          keyPoints: sanitizeEmailField(raw.keyPoints),
+          plans: sanitizeEmailField(raw.plans),
+          closing: sanitizeEmailField(raw.closing),
+        }
+      : raw;
 
   const render = { plain: toPlainBlock, markdown: toMarkdownBlock, html: toHtmlBlock }[outputMode];
-  const body = render("", data, sourceUrl, outputPurpose);
+  let body = render("", data, sourceUrl, outputPurpose);
 
-  if (outputPurpose === "email" && data.subject) {
-    if (outputMode === "html") {
-      return `<p><strong>Subject: ${escapeHtml(data.subject)}</strong></p>${body}`;
+  if (outputPurpose === "email") {
+    if (outputMode !== "html") body = deduplicateUrl(body, sourceUrl);
+    if (data.subject) {
+      if (outputMode === "html") {
+        return `<p><strong>Subject: ${escapeHtml(data.subject)}</strong></p>${body}`;
+      }
+      return `Subject: ${data.subject}\n\n${body}`;
     }
-    return `Subject: ${data.subject}\n\n${body}`;
   }
   return body;
 }
