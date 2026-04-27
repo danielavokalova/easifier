@@ -495,22 +495,22 @@ async function generateWithOpenAI({
       `opening: ${
         outputPurpose === "summary"
           ? "1 to 2 sentences. State what the product is and who it is for."
-          : "Line 1: one intro sentence (e.g. 'I'd like to share a quick overview of [Product] by [Company].'). Then a blank line. Then 2 to 3 paragraphs: describe what the product actually does, who it is built for, and what concrete value it delivers to a travel agency. Be specific — use facts from the source, not generic descriptions."
+          : "Line 1: one intro sentence, e.g. 'I'd like to share a quick overview of [Product] by [Company].' Then a blank line. Then exactly one paragraph (3-5 sentences) that explains: what the product is, who it is built for, what it enables or replaces, and what its key differentiator is. Use concrete facts from the source. Example paragraph structure: '[Product] is a [type] for [audience] that enables [core function]. It [key capabilities]. The solution is designed to [business outcome].'"
       }`,
       `keyPoints: ${
         outputPurpose === "summary"
           ? "Short list. One fact or benefit per line. Use - as bullet marker. Maximum 5 items."
-          : "Write 'Key product highlights:' on the first line. Then 5 to 7 bullet points starting with -. Each bullet must state a specific, verifiable fact (content sources covered, search types, integration options, admin features, etc.). No marketing adjectives, no image references, no duplicated points."
+          : "Write 'Key product highlights:' on the first line. Then 5 to 7 bullets starting with -. Each bullet is a short, specific fact: what content sources it covers, what search or booking capabilities it has, what admin or integration features exist. No marketing adjectives. No image references. No duplicates."
       }`,
       `plans: ${
         outputPurpose === "summary"
           ? "If pricing or packages are visible, list each on its own line. If not, write one sentence saying so."
-          : "Write 'Plans at a glance (public pricing):' on the first line, then a blank line. If named plan tiers exist (e.g. Standard, Enhanced, Enterprise), write 'N) Plan name' as the heading and list fee items as '- Fee description: amount' bullets beneath it. If no named tiers exist but pricing figures are shown, list each complete fee as '- Fee description: amount' — a fee and its amount must always appear together on the same bullet. Never create a bullet or numbered item that contains only a price with no description, or only a description with no price. If you cannot reliably pair a price with its description, omit it. If no pricing at all: write 'Pricing is available on request.'"
+          : "Write 'Plans at a glance (public pricing):' on the first line, then a blank line. If named plan tiers exist (e.g. Standard, Enhanced, Enterprise): write 'N) Plan name', then list fee items as '- Label: value' bullets, and end each plan with a '- Best for: [one sentence describing who this plan fits]' bullet. Separate plans with a blank line. If there are additional fees or usage-based charges after the plans, add 'Additional cost notes:' and list them as bullets. If no named tiers exist but pricing figures are shown, list each complete fee as '- Fee label: amount' — label and amount always together. Never list a price without a label or a label without a price. If you cannot reliably pair them, omit. If no pricing at all: write 'Pricing is available on request.'"
       }`,
       `closing: ${
         outputPurpose === "summary"
           ? "One sentence pointing to the source URL."
-          : "Write 1 sentence inviting the client to request more details or a tailored recommendation. Then on a new line write 'More details: [source url]'. Then a blank line, then 'Best regards,' and on the next line '[Your Name]'."
+          : "One sentence offering to send a tailored recommendation or more details — make it specific to the product context (e.g. mention booking volume, target markets, or agency size if relevant). Then on a new line: 'More details: [source url]'. Then a blank line, then 'Best regards,' and on the next line '[Your Name]'."
       }`,
       "sourceNote: The source URL only.",
     ].join("\n"),
@@ -518,17 +518,15 @@ async function generateWithOpenAI({
     [
       "STRICT RULES",
       outputPurpose === "email"
-        ? "Never use *, **, ***, #, ##, or any markdown formatting in any field. The only allowed list marker is - for bullet points and N) for numbered plan headings. No bold, no italic, no headings."
+        ? "Never use *, **, ***, #, ##, or any other markdown formatting anywhere. Only allowed markers: - for bullet points, N) for numbered plan headings. No bold, no italic, no headings."
         : "Markdown bullets are acceptable in keyPoints and plans.",
       outputPurpose === "email"
-        ? "The source URL must appear exactly once, only in the closing field. Do not include it in opening, keyPoints, or plans."
+        ? "The source URL must appear exactly once, only in the closing field. Never include it in opening, keyPoints, or plans."
         : "",
-      "No invented features, package names, or prices — only what is clearly stated in the source.",
-      "Only mention package names (Standard, Basic, Enhanced, Enterprise, etc.) if they appear in the source.",
-      "If pricing is for one product only, call it 'pricing', not 'packages' or 'tiers'.",
-      "If version or pricing details are unclear, say so briefly instead of guessing.",
+      "Only include information clearly stated in the source. No invented features, package names, prices, or plan names.",
+      "Only mention plan names (Standard, Enhanced, Enterprise, etc.) if they appear verbatim in the source.",
+      "If pricing details are unclear or incomplete, say so briefly — never guess.",
       `Write the entire output in ${languageName} only. No mixed languages.`,
-      "Output must be close to ready for sending.",
     ].join("\n"),
   ].join("\n\n");
 

@@ -344,7 +344,7 @@ function sanitizeEmailField(text) {
 function cleanSourceText(text) {
   return normalizeWhitespace(
     text
-      .replace(/^url source:.*$/gim, "")
+      .replace(/^(url source|published time|markdown content|author|crawled at):\s*.*$/gim, "")
       .replace(/!\[.*?\]\(.*?\)/g, ""),
   );
 }
