@@ -61,19 +61,17 @@ a {
 .site-header {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   flex-wrap: wrap;
-  padding: 10px 16px;
+  padding: 6px 4px;
   margin-bottom: 10px;
-  border: 1px solid var(--line-soft);
-  border-radius: var(--radius-lg);
-  background: rgba(255, 255, 255, 0.04);
+  border-bottom: 1px solid var(--line-soft);
 }
 
 .header-tagline {
   flex: 1;
-  color: rgba(236, 230, 213, 0.55);
-  font-size: 0.78rem;
+  color: rgba(236, 230, 213, 0.45);
+  font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -92,11 +90,10 @@ a {
 .micro-nav a {
   display: inline-flex;
   align-items: center;
-  min-height: 32px;
-  padding: 5px 11px;
+  padding: 2px 8px;
   border: 1px solid var(--line-soft);
   border-radius: 2px;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   text-decoration: none;
   background: rgba(236, 230, 213, 0.06);
 }
@@ -153,10 +150,11 @@ h2 {
 }
 
 .badge {
-  padding: 9px 12px;
-  border: 1px solid rgba(37, 37, 34, 0.1);
+  padding: 2px 9px;
+  border: 1px solid rgba(236, 230, 213, 0.28);
   border-radius: 999px;
-  background: rgba(216, 195, 165, 0.35);
+  background: rgba(236, 230, 213, 0.08);
+  color: rgba(236, 230, 213, 0.55);
 }
 
 .field {
