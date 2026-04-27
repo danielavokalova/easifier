@@ -328,8 +328,11 @@ function sanitizeEmailField(text) {
   return text
     .replace(/^-\s*!\[.*?\]\(.*?\)\s*$/gm, "")
     .replace(/!\[.*?\]\(.*?\)/g, "")
+    .replace(/^url source:.*$/gim, "")
+    .replace(/^source url:.*$/gim, "")
     .replace(/^\*\s+/gm, "- ")
-    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/^(-\s*)#{1,6}\s*/gm, "$1")
+    .replace(/^#{1,6}\s*/gm, "")
     .replace(/\*\*\*([^*\n]+)\*\*\*/g, "$1")
     .replace(/\*\*([^*\n]+)\*\*/g, "$1")
     .replace(/\*([^*\n]+)\*/g, "$1")
@@ -338,14 +341,21 @@ function sanitizeEmailField(text) {
     .trim();
 }
 
-function deduplicateUrl(text, url) {
+function cleanSourceText(text) {
+  return normalizeWhitespace(
+    text
+      .replace(/^url source:.*$/gim, "")
+      .replace(/!\[.*?\]\(.*?\)/g, ""),
+  );
+}
+
+function stripUrl(text, url) {
   if (!url || !text) return text;
   const escaped = url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const regex = new RegExp(escaped, "g");
-  const matches = [...text.matchAll(regex)];
-  if (matches.length <= 1) return text;
-  let count = 0;
-  return text.replace(regex, () => (++count < matches.length ? "" : url));
+  return text
+    .replace(new RegExp(`\\s*${escaped}\\s*`, "g"), " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 function buildOutputs(generated) {
@@ -359,24 +369,21 @@ function buildOutputs(generated) {
     outputPurpose === "email"
       ? {
           ...raw,
-          opening: sanitizeEmailField(raw.opening),
-          keyPoints: sanitizeEmailField(raw.keyPoints),
-          plans: sanitizeEmailField(raw.plans),
+          opening: stripUrl(sanitizeEmailField(raw.opening), sourceUrl),
+          keyPoints: stripUrl(sanitizeEmailField(raw.keyPoints), sourceUrl),
+          plans: stripUrl(sanitizeEmailField(raw.plans), sourceUrl),
           closing: sanitizeEmailField(raw.closing),
         }
       : raw;
 
   const render = { plain: toPlainBlock, markdown: toMarkdownBlock, html: toHtmlBlock }[outputMode];
-  let body = render("", data, sourceUrl, outputPurpose);
+  const body = render("", data, sourceUrl, outputPurpose);
 
-  if (outputPurpose === "email") {
-    if (outputMode !== "html") body = deduplicateUrl(body, sourceUrl);
-    if (data.subject) {
-      if (outputMode === "html") {
-        return `<p><strong>Subject: ${escapeHtml(data.subject)}</strong></p>${body}`;
-      }
-      return `Subject: ${data.subject}\n\n${body}`;
+  if (outputPurpose === "email" && data.subject) {
+    if (outputMode === "html") {
+      return `<p><strong>Subject: ${escapeHtml(data.subject)}</strong></p>${body}`;
     }
+    return `Subject: ${data.subject}\n\n${body}`;
   }
   return body;
 }
@@ -482,7 +489,7 @@ async function fetchSource() {
     if (!response.ok) {
       throw new Error(`Fetch failed with status ${response.status}.`);
     }
-    const readerText = normalizeWhitespace(await response.text());
+    const readerText = cleanSourceText(await response.text());
     els.sourceTitle.value = els.sourceTitle.value || inferTitleFromReaderText(readerText, normalizedUrl);
     els.sourceText.value = readerText || "";
     els.sourceUrl.value = normalizedUrl;
@@ -496,7 +503,7 @@ async function fetchSource() {
 
 async function generateSummary() {
   const url = els.sourceUrl.value.trim();
-  const extractedText = els.sourceText.value.trim();
+  const extractedText = cleanSourceText(els.sourceText.value);
 
   if (!url || !extractedText) {
     setStatus("Source URL and source text are required.", true);

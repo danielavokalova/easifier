@@ -475,15 +475,15 @@ async function generateWithOpenAI({
   const instructions = [
     outputPurpose === "summary"
       ? "You are writing short internal product summaries."
-      : "You are writing short, polished, client-ready product emails.",
+      : "You are a travel tech sales consultant writing a short, client-ready product email.",
 
     outputPurpose === "summary"
       ? "GOAL\nTurn the source text into a compact briefing note a colleague can read in under a minute."
-      : "GOAL\nTurn the source text into a concise, natural client email that is close to ready-to-send. It must read like a thoughtful note written by a person, not a marketing brochure or a feature dump.",
+      : "GOAL\nWrite a concise, natural email to a travel agency client about the product. It must read like a thoughtful message from a knowledgeable colleague — not a brochure, not a feature list, not an AI summary. The client should understand what the product does and whether it is relevant to them.",
 
     "EXTRACTION PRIORITY (follow in this order)\n1. What the product is and who it is for\n2. The 3 to 5 most commercially relevant features or benefits\n3. Pricing, packages, or version differences — only when clearly stated in the source",
 
-    "TONE\nWarm, professional, commercially useful. No hype, no exclamation marks, no phrases like 'game-changing' or 'cutting-edge'.",
+    "TONE\nWarm, direct, commercially useful. Write as a helpful colleague, not a salesperson. No hype, no exclamation marks, no phrases like 'game-changing', 'cutting-edge', or 'empower'.",
 
     [
       "FIELD FORMAT",
@@ -495,17 +495,17 @@ async function generateWithOpenAI({
       `opening: ${
         outputPurpose === "summary"
           ? "1 to 2 sentences. State what the product is and who it is for."
-          : "Write 1 brief intro sentence on the first line (e.g., 'I'd like to share a quick overview of [Product] by [Company].'). Then a blank line. Then 2-3 paragraphs explaining what the product is, who it is for, and what core value it delivers to the client."
+          : "Line 1: one intro sentence (e.g. 'I'd like to share a quick overview of [Product] by [Company].'). Then a blank line. Then 2 to 3 paragraphs: describe what the product actually does, who it is built for, and what concrete value it delivers to a travel agency. Be specific — use facts from the source, not generic descriptions."
       }`,
       `keyPoints: ${
         outputPurpose === "summary"
           ? "Short list. One fact or benefit per line. Use - as bullet marker. Maximum 5 items."
-          : "Write 'Key product highlights:' on the first line. Then list 5-7 bullet points using - as the marker. Each bullet must be a specific, concrete fact or capability (e.g. what content it covers, who it serves, what it enables). Do not include marketing adjectives, image references, or duplicated points."
+          : "Write 'Key product highlights:' on the first line. Then 5 to 7 bullet points starting with -. Each bullet must state a specific, verifiable fact (content sources covered, search types, integration options, admin features, etc.). No marketing adjectives, no image references, no duplicated points."
       }`,
       `plans: ${
         outputPurpose === "summary"
           ? "If pricing or packages are visible, list each on its own line. If not, write one sentence saying so."
-          : "Write 'Plans at a glance (public pricing):' on the first line, then a blank line. If the source shows named plan tiers (e.g. Standard, Enhanced, Enterprise), write 'N) Plan name' as a numbered heading and list fee items as bullet points underneath. If no named tiers exist but pricing figures are shown, list each as a bullet in the format '- Fee label: amount' — do not create separate numbered items for the label and the amount. After main pricing, if there are additional fees or conditions, add 'Additional cost notes:' and list them as bullets. If no pricing at all, write: 'Pricing is available on request.'"
+          : "Write 'Plans at a glance (public pricing):' on the first line, then a blank line. If named plan tiers exist (e.g. Standard, Enhanced, Enterprise), write 'N) Plan name' as the heading and list fee items as '- Fee description: amount' bullets beneath it. If no named tiers exist but pricing figures are shown, list each complete fee as '- Fee description: amount' — a fee and its amount must always appear together on the same bullet. Never create a bullet or numbered item that contains only a price with no description, or only a description with no price. If you cannot reliably pair a price with its description, omit it. If no pricing at all: write 'Pricing is available on request.'"
       }`,
       `closing: ${
         outputPurpose === "summary"
