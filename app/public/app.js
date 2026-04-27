@@ -17,6 +17,7 @@ const els = {
   statusMessage: document.getElementById("statusMessage"),
   fetchBtn: document.getElementById("fetchBtn"),
   loadDemoBtn: document.getElementById("loadDemoBtn"),
+  clearSourceBtn: document.getElementById("clearSourceBtn"),
   generateBtn: document.getElementById("generateBtn"),
   clearBtn: document.getElementById("clearBtn"),
   copyBtn: document.getElementById("copyBtn"),
@@ -176,9 +177,9 @@ function toMarkdownBlock(title, data, sourceUrl, outputPurpose) {
   }
   if (outputPurpose === "email") {
     const { greeting } = getEmailBridgeText();
-    const transition = normalizeEmailLines(data.keyPoints || "");
+    const kp = (data.keyPoints || "").trim();
     const parts = [greeting, "", data.opening];
-    if (transition) parts.push("", transition);
+    if (kp) parts.push("", kp);
     parts.push("", data.plans || "", "", data.closing);
     return parts.join("\n");
   }
@@ -199,9 +200,9 @@ function toPlainBlock(title, data, sourceUrl, outputPurpose) {
   }
   if (outputPurpose === "email") {
     const { greeting } = getEmailBridgeText();
-    const transition = normalizeEmailLines(data.keyPoints || "");
+    const kp = (data.keyPoints || "").trim();
     const parts = [greeting, "", data.opening];
-    if (transition) parts.push("", transition);
+    if (kp) parts.push("", kp);
     parts.push("", data.plans || "", "", data.closing);
     return parts.join("\n");
   }
@@ -268,19 +269,46 @@ function toEmailHtmlList(input) {
   return `<ul>${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>`;
 }
 
+function renderEmailBlockHtml(input) {
+  if (!input) return "";
+  const lines = input.split("\n");
+  const out = [];
+  let listOpen = false;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) {
+      if (listOpen) { out.push("</ul>"); listOpen = false; }
+      continue;
+    }
+    if (/^-\s+/.test(line)) {
+      if (!listOpen) { out.push("<ul>"); listOpen = true; }
+      out.push(`<li>${escapeHtml(line.replace(/^-\s+/, ""))}</li>`);
+    } else {
+      if (listOpen) { out.push("</ul>"); listOpen = false; }
+      if (/^\d+[).]\s+/.test(line)) {
+        out.push(`<p><strong>${escapeHtml(line)}</strong></p>`);
+      } else {
+        out.push(`<p>${escapeHtml(line)}</p>`);
+      }
+    }
+  }
+  if (listOpen) out.push("</ul>");
+  return out.join("");
+}
+
 function toHtmlBlock(title, data, sourceUrl, outputPurpose) {
   if (!data) {
     return "";
   }
   if (outputPurpose === "email") {
     const { greeting } = getEmailBridgeText();
-    const transition = normalizeEmailLines(data.keyPoints || "");
+    const kp = (data.keyPoints || "").trim();
     return [
       "<section>",
       `<p>${escapeHtml(greeting)}</p>`,
       textToHtmlParagraphs(data.opening),
-      transition ? `<p>${escapeHtml(transition)}</p>` : "",
-      textToHtmlParagraphs(data.plans || ""),
+      kp ? renderEmailBlockHtml(kp) : "",
+      renderEmailBlockHtml(data.plans || ""),
       textToHtmlParagraphs(data.closing),
       "</section>",
     ].join("");
@@ -300,15 +328,18 @@ function buildOutputs(generated) {
   const sourceUrl = generated.sourceUrl || els.sourceUrl.value.trim();
   const outputPurpose = els.outputPurpose.value;
   const data = els.languageMode.value === "cs" ? generated.czech : generated.english;
+  if (!data) return "";
 
-  const renderers = {
-    plain: toPlainBlock,
-    markdown: toMarkdownBlock,
-    html: toHtmlBlock,
-  };
-  const render = renderers[outputMode];
+  const render = { plain: toPlainBlock, markdown: toMarkdownBlock, html: toHtmlBlock }[outputMode];
+  const body = render("", data, sourceUrl, outputPurpose);
 
-  return data ? render("", data, sourceUrl, outputPurpose) : "";
+  if (outputPurpose === "email" && data.subject) {
+    if (outputMode === "html") {
+      return `<p><strong>Subject: ${escapeHtml(data.subject)}</strong></p>${body}`;
+    }
+    return `Subject: ${data.subject}\n\n${body}`;
+  }
+  return body;
 }
 
 function updateOutput() {
@@ -492,6 +523,14 @@ function clearOutput() {
   setStatus("Output cleared.");
 }
 
+function clearSource() {
+  els.sourceUrl.value = "";
+  els.sourceTitle.value = "";
+  els.sourceText.value = "";
+  els.extraInstructions.value = "";
+  setStatus("Source cleared.");
+}
+
 function openMailDraft() {
   const subject = buildEmailSubject();
   const body = els.resultText.value.trim();
@@ -505,6 +544,7 @@ function openMailDraft() {
 els.fetchBtn.addEventListener("click", fetchSource);
 els.sourceFile.addEventListener("change", handleFileUpload);
 els.loadDemoBtn.addEventListener("click", loadDemo);
+els.clearSourceBtn?.addEventListener("click", clearSource);
 els.generateBtn.addEventListener("click", generateSummary);
 els.clearBtn.addEventListener("click", clearOutput);
 els.copyBtn.addEventListener("click", () => copyToClipboard(els.resultText.value, "Output copied to clipboard."));
@@ -539,4 +579,3 @@ els.outputPurpose.addEventListener("change", updateOutput);
 els.languageMode.addEventListener("change", updateOutput);
 
 refreshHealth();
-loadDemo();

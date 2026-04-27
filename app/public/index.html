@@ -4,69 +4,27 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>nofluff</title>
+    <meta
+      name="description"
+      content="Turn product pages into concise client-ready emails in English or Czech."
+    />
     <link rel="stylesheet" href="/styles.css" />
   </head>
   <body>
     <div class="page-shell">
-      <header class="hero">
-        <div class="hero-topline">
-          <span class="brand-mark">nofluff</span>
-          <nav class="micro-nav">
-            <a href="#workspace">Workspace</a>
-            <a href="https://github.com/danielavokalova/nofluff">GitHub</a>
-          </nav>
-        </div>
-
-        <div class="hero-grid">
-          <div class="hero-copy-wrap">
-            <p class="eyebrow">Client-ready extraction</p>
-            <h1>No Fluff. Just the Meat.</h1>
-            <p class="hero-copy">
-              Turn messy product pages, pasted notes, files, and screenshots into a concise client email or
-              a short internal summary that actually says something useful.
-            </p>
-
-            <div class="hero-actions">
-              <a class="button primary" href="#workspace">Open workspace</a>
-              <a class="button secondary" href="https://github.com/danielavokalova/nofluff">View repo</a>
-            </div>
-          </div>
-
-          <div class="hero-stage">
-            <div class="hero-orbit"></div>
-            <div class="hero-card hero-card-main">
-              <p class="card-label">Best for</p>
-              <ul>
-                <li>Long vendor pages</li>
-                <li>Pricing-heavy product sites</li>
-                <li>Visual landing pages</li>
-                <li>Client-facing recaps</li>
-              </ul>
-            </div>
-            <div class="hero-card hero-card-facts">
-              <span>URL</span>
-              <span>TEXT</span>
-              <span>FILES</span>
-              <span>SCREENSHOTS</span>
-            </div>
-          </div>
-        </div>
+      <header class="site-header">
+        <span class="brand-mark">nofluff</span>
+        <span class="header-tagline">Turn product pages into client-ready emails</span>
+        <span id="healthBadge" class="badge">Checking AI status...</span>
+        <nav class="micro-nav">
+          <a href="https://github.com/danielavokalova/nofluff">GitHub</a>
+        </nav>
       </header>
-
-      <section class="marquee-band">
-        <span>Client email</span>
-        <span>Short summary</span>
-        <span>English</span>
-        <span>Czech</span>
-        <span>URL fetch</span>
-        <span>OCR screenshots</span>
-      </section>
 
       <main id="workspace" class="layout">
         <section class="panel">
           <div class="panel-heading">
             <h2>Source</h2>
-            <span id="healthBadge" class="badge">Checking AI status...</span>
           </div>
 
           <label class="field">
@@ -74,9 +32,10 @@
             <input id="sourceUrl" type="url" placeholder="https://www.example.com/product-page" />
           </label>
 
-          <div class="button-row">
-            <button id="fetchBtn" class="button primary">Fetch source</button>
-            <button id="loadDemoBtn" class="button secondary">Load GOL IBE demo</button>
+          <div class="button-row wrap">
+            <button id="fetchBtn" class="button primary">Fetch URL</button>
+            <button id="loadDemoBtn" class="button secondary">Load demo</button>
+            <button id="clearSourceBtn" class="button ghost">Clear</button>
           </div>
 
           <label class="field">
@@ -89,16 +48,16 @@
           </label>
 
           <label class="field">
-            <span>Detected title</span>
-            <input id="sourceTitle" type="text" placeholder="Page title" />
+            <span>Product / page title</span>
+            <input id="sourceTitle" type="text" placeholder="Page title or product name" />
           </label>
 
           <label class="field">
             <span>Extra instructions</span>
             <textarea
               id="extraInstructions"
-              rows="4"
-              placeholder="Optional: focus on pricing, target audience, plan comparison, or a specific client angle."
+              rows="3"
+              placeholder="Optional: focus on pricing, version differences, client value, implementation scope, or target audience."
             ></textarea>
           </label>
 
@@ -106,16 +65,15 @@
             <span>Source text</span>
             <textarea
               id="sourceText"
-              rows="12"
-              placeholder="Fetched source text will appear here. You can also paste your own source text or upload a screenshot/file."
+              rows="20"
+              placeholder="Paste source text here, or use Fetch URL / Upload file above."
             ></textarea>
           </label>
         </section>
 
         <section class="panel">
           <div class="panel-heading">
-            <h2>Generation</h2>
-            <span class="subtle">AI optional, formatting always available</span>
+            <h2>Output</h2>
           </div>
 
           <div class="inline-grid">
@@ -130,58 +88,53 @@
             <label class="field">
               <span>Language</span>
               <select id="languageMode">
-                <option value="en">English only</option>
-                <option value="cs">Czech only</option>
+                <option value="en">English</option>
+                <option value="cs">Czech</option>
               </select>
             </label>
-          </div>
 
-          <div class="inline-grid">
             <label class="field">
-              <span>Output view</span>
+              <span>Format</span>
               <select id="outputMode">
                 <option value="plain">Plain text</option>
                 <option value="markdown">Markdown</option>
                 <option value="html">HTML</option>
               </select>
             </label>
+
+            <label class="field">
+              <span>OpenAI API key</span>
+              <input
+                id="apiKey"
+                type="password"
+                placeholder="sk-… (browser only, not stored)"
+                autocomplete="off"
+              />
+            </label>
           </div>
 
-          <label class="field">
-            <span>OpenAI API key</span>
-            <input
-              id="apiKey"
-              type="password"
-              placeholder="Optional. Needed for polished bilingual generation."
-              autocomplete="off"
-            />
-          </label>
-
-          <div class="button-row">
-            <button id="generateBtn" class="button primary">Generate summary</button>
+          <div class="button-row wrap">
+            <button id="generateBtn" class="button primary">Generate</button>
             <button id="clearBtn" class="button ghost">Clear output</button>
           </div>
 
           <label class="field">
             <span>Generated output</span>
-            <textarea id="resultText" rows="12" placeholder="Your summary will appear here."></textarea>
+            <textarea id="resultText" rows="24" placeholder="Output will appear here after you click Generate."></textarea>
           </label>
 
           <div class="button-row wrap">
-            <button id="copyBtn" class="button secondary">Copy output</button>
-            <button id="copySubjectBtn" class="button secondary">Copy email subject</button>
-            <button id="downloadTxtBtn" class="button secondary">Download TXT</button>
-            <button id="downloadMdBtn" class="button secondary">Download MD</button>
-            <button id="downloadHtmlBtn" class="button secondary">Download HTML</button>
+            <button id="copyBtn" class="button secondary">Copy</button>
+            <button id="copySubjectBtn" class="button secondary">Copy subject</button>
+            <button id="downloadTxtBtn" class="button secondary">TXT</button>
+            <button id="downloadMdBtn" class="button secondary">MD</button>
+            <button id="downloadHtmlBtn" class="button secondary">HTML</button>
             <button id="mailtoBtn" class="button ghost">Open mail draft</button>
           </div>
         </section>
       </main>
 
       <section class="panel status-panel">
-        <div class="panel-heading">
-          <h2>Status</h2>
-        </div>
         <p id="statusMessage">Ready.</p>
       </section>
     </div>
@@ -191,4 +144,4 @@
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <script src="/app.js"></script>
   </body>
-  </html>
+</html>

@@ -329,55 +329,48 @@ function buildFallbackSummary({ url, title, extractedText, languageMode, outputP
 
   if (languageMode === "en") {
     result.english = {
-      subject: outputPurpose === "summary" ? title || "Short summary" : title || "Product overview",
+      subject:
+        outputPurpose === "summary"
+          ? title || "Short summary"
+          : `${title || "Product"} - Overview + Plans & Pricing`,
       opening:
         outputPurpose === "summary"
           ? `${title || "This product"} in short: ${description || "the source presents a product with a clear business use case and practical feature set."}`
-          : `I wanted to share a short overview of ${title || "this product"}. ${description || "It appears to offer a practical solution with a clear business focus."}`,
-      keyPoints: listFormatter(
-        combinedFeatures,
-        outputPurpose === "email"
-          ? "The source did not expose enough clear feature detail for a stronger automatic summary."
-          : "- The source did not expose enough clear feature detail for a stronger automatic summary.",
-      ),
+          : `I'd like to share a quick overview of ${title || "this product"}.\n\n${description || "It appears to offer a practical solution with a clear business focus."}`,
+      keyPoints: combinedFeatures.length
+        ? `Key product highlights:\n${combinedFeatures.map((f) => `- ${sentenceCase(f)}`).join("\n")}`
+        : "Key product highlights:\n- The source did not expose enough clear feature detail for an automatic summary.",
       plans: pricing.length
-        ? listFormatter(pricing, "")
-        : outputPurpose === "email"
-          ? "Pricing details are available on request."
-          : "- Pricing details are available on request.",
+        ? `Plans at a glance (public pricing):\n\n${pricing.map((p, i) => `${i + 1}) ${sentenceCase(p)}`).join("\n\n")}`
+        : "Pricing is available on request.",
       closing:
         outputPurpose === "summary"
           ? `For more details, see the source here: ${url}`
-          : `If this looks relevant, I would be happy to share more detail. You can also find the full source page here: ${url}`,
+          : `If useful, I can also send a more detailed breakdown.\n\nMore details: ${url}\n\nBest regards,\n[Your Name]`,
       sourceNote: outputPurpose === "summary" ? `Source: ${url}` : `Read more: ${url}`,
     };
   }
 
   if (languageMode === "cs") {
     result.czech = {
-      subject: outputPurpose === "summary" ? title || "Stručné shrnutí" : title || "Přehled produktu",
+      subject:
+        outputPurpose === "summary"
+          ? title || "Stručné shrnutí"
+          : `${title || "Produkt"} - Přehled + plány a ceny`,
       opening:
         outputPurpose === "summary"
           ? `${title || "Tento produkt"} ve zkratce: ${description || "zdroj ukazuje řešení s jasným byznysovým použitím a praktickými funkcemi."}`
-          : `Posílám krátký přehled produktu ${title || ""}. ${description || "Jde o řešení s jasným byznysovým zaměřením a praktickým přínosem."} Podle zdroje jde o produkt, který se dá klientovi vysvětlit rychle a srozumitelně.`.trim(),
-      keyPoints: listFormatter(
-        combinedFeatures,
-        outputPurpose === "email"
-          ? "Ve zdroji nebylo dost jednoznačných informací pro lepší automatické shrnutí funkcí."
-          : "- Ve zdroji nebylo dost jednoznačných informací pro lepší automatické shrnutí funkcí.",
-      ),
+          : `Posílám krátký přehled produktu ${title || ""}.\n\n${description || "Jde o řešení s jasným byznysovým zaměřením a praktickým přínosem."}`.trim(),
+      keyPoints: combinedFeatures.length
+        ? `Klíčové vlastnosti produktu:\n${combinedFeatures.map((f) => `- ${sentenceCase(f)}`).join("\n")}`
+        : "Klíčové vlastnosti produktu:\n- Ve zdroji nebylo dost jednoznačných informací pro automatické shrnutí funkcí.",
       plans: pricing.length
-        ? [
-            "Z cenové části jsou nejdůležitější tyto body:",
-            listFormatter(pricing, ""),
-          ].join("\n")
-        : outputPurpose === "email"
-          ? "Zdroj neukazuje jasné rozdělení balíčků ani ceníku."
-          : "- Zdroj neukazuje jasné rozdělení balíčků ani ceníku.",
+        ? `Přehled plánů a cen:\n\n${pricing.map((p, i) => `${i + 1}) ${sentenceCase(p)}`).join("\n\n")}`
+        : "Ceník je dostupný na vyžádání.",
       closing:
         outputPurpose === "summary"
           ? `Pro více detailů je zdroj tady: ${url}`
-          : `Pokud to bude pro tebe relevantní, ráda pošlu víc detailů, ale kompletní zdrojová stránka je tady: ${url}`,
+          : `Pokud to bude relevantní, ráda pošlu víc detailů.\n\nVíce informací: ${url}\n\nS pozdravem,\n[Vaše jméno]`,
       sourceNote: outputPurpose === "summary" ? `Zdroj: ${url}` : `Více informací: ${url}`,
     };
   }
@@ -494,25 +487,30 @@ async function generateWithOpenAI({
 
     [
       "FIELD FORMAT",
+      `subject: ${
+        outputPurpose === "summary"
+          ? "Short descriptive title for the summary."
+          : "Descriptive email subject line in the format: 'Product Name - Brief Description of What This Email Covers' (e.g., 'GOL IBE - Product Overview + Plans & Pricing')."
+      }`,
       `opening: ${
         outputPurpose === "summary"
           ? "1 to 2 sentences. State what the product is and who it is for."
-          : "Write 2 full paragraphs separated by a blank line. First paragraph (2-3 sentences): introduce the product by name, the company if mentioned, and explain what it does and for whom. Second paragraph (2-3 sentences): describe the key value the client gains — what content sources, main capability areas, and business problems it addresses."
+          : "Write 1 brief intro sentence on the first line (e.g., 'I'd like to share a quick overview of [Product] by [Company].'). Then a blank line. Then 2-3 paragraphs explaining what the product is, who it is for, and what core value it delivers to the client."
       }`,
       `keyPoints: ${
         outputPurpose === "summary"
           ? "Short list. One fact or benefit per line. Use - as bullet marker. Maximum 5 items."
-          : "Write a single short transition sentence leading naturally into the version or pricing section, for example: 'Based on publicly available information, two versions are offered:'. If the source has no clearly named versions or pricing tiers, leave this field empty."
+          : "Write 'Key product highlights:' on the first line. Then list 5-7 bullet points using - as the marker. Each bullet should be a specific, concrete capability or benefit — not vague marketing language."
       }`,
       `plans: ${
         outputPurpose === "summary"
           ? "If pricing or packages are visible, list each on its own line. If not, write one sentence saying so."
-          : "For each clearly named version or tier: write the version name on its own line, then 'Best for: [1-2 sentences about who benefits and why]', then a 2-3 sentence summary of what it includes or adds. Separate each version block with a blank line. After all versions, add a blank line, then write 'Pricing overview:' on its own line, then one compact line per fee in the format: 'Fee name: Version1 value / Version2 value'. Include monthly fee, per-booking fees, and deposit. If no named tiers exist, describe the pricing clearly. If no pricing at all, write: 'Pricing is available on request.'"
+          : "Write 'Plans at a glance (public pricing):' on the first line, then a blank line. For each named plan write 'N) Plan name' as a numbered heading, then bullet points (using -) for each pricing item and key limit. After all plans, if additional fees or conditions are mentioned, add a blank line then 'Additional cost notes:' and list them as bullets. Use blank lines between plan blocks. If no named plans exist, describe the pricing clearly. If no pricing at all, write: 'Pricing is available on request.'"
       }`,
       `closing: ${
         outputPurpose === "summary"
           ? "One sentence pointing to the source URL."
-          : "Write 2 sentences. First: a one-sentence overall assessment of what makes this solution interesting or valuable. Second: invite the client to ask for a more detailed breakdown and include the source URL naturally, for example: 'More information is also available here: [url]'."
+          : "Write 1 sentence inviting the client to request more details or a tailored recommendation. Then on a new line write 'More details: [source url]'. Then a blank line, then 'Best regards,' and on the next line '[Your Name]'."
       }`,
       "sourceNote: The source URL only.",
     ].join("\n"),
@@ -520,7 +518,7 @@ async function generateWithOpenAI({
     [
       "STRICT RULES",
       outputPurpose === "email"
-        ? "No markdown in the output: no #, *, -, •, ~ or any other formatting characters. Use blank lines to separate paragraphs and sections."
+        ? "In opening and closing: no markdown markers (#, *, ~, _). In keyPoints and plans: use - for bullets and N) for numbered items — these sections are structured lists."
         : "Markdown bullets are acceptable in keyPoints and plans.",
       "No invented features, package names, or prices — only what is clearly stated in the source.",
       "Only mention package names (Standard, Basic, Enhanced, Enterprise, etc.) if they appear in the source.",
